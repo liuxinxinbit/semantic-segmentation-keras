@@ -79,16 +79,36 @@ class marine_data:
             yield images, truths
 
 
-filename = "../dataset/VOCdevkit/VOC2007/"#"ImageSets/Segmentation/test.txt"
 
-lines_img = []
-lines_label = []
-with open(filename+"ImageSets/Segmentation/test.txt", 'r') as file_to_read:
-  while True:
-    line = file_to_read.readline() # 整行读取数据
-    print(line)
-    if not line:
-        break
-    lines_img.append(filename+"JPEGImages/"+line[:-1]+".jpg")
-    lines_label.append(filename+"JPEGImages/"+line[:-1]+".png")
-print(lines_img)
+class voc_data:
+    def __init__(self,data_dir='../marine_data/'):
+        self.filename = "../dataset/VOCdevkit/VOC2007/"
+        self.trainset  = self.read_traindata_names(data_dir)
+        self.num_train = len(self.trainset)
+
+    def voc_fileset(self,data_type="train"):
+        if data_type==data_type
+        lines_img = []
+        lines_label = []
+        with open(self.filename+"ImageSets/Segmentation/test.txt", 'r') as file_to_read:
+            while True:
+                line = file_to_read.readline() # 整行读取数据
+                if not line:
+                    break
+                lines_img.append(self.filename+"JPEGImages/"+line[:-1]+".jpg")
+                lines_label.append(self.filename+"SegmentationClass/"+line[:-1]+".png")
+        return lines_img,lines_label
+
+    def BatchGenerator(self,batch_size=8, image_size=(448, 512, 3), labels=3):#500, 375
+        while True:
+            images = np.zeros((batch_size, image_size[0], image_size[1], image_size[2]))
+            truths = np.zeros((batch_size, image_size[0], image_size[1], labels))
+            for i in range(batch_size):
+                random_line = random.choice(self.trainset)
+                image,truth_mask,lbl_viz = self.json2data(random_line)
+                truth_mask=truth_mask+1
+                image, truth = random_crop_or_pad(image, truth_mask, image_size)
+                images[i] = image/255
+                truths[i] = (np.arange(labels) == truth[...,None]-1).astype(int) # encode to one-hot-vector
+            yield images, truths
+
