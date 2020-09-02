@@ -87,7 +87,15 @@ class voc_data:
         self.num_train = len(self.trainset)
 
     def voc_fileset(self,data_type="train"):
-        if data_type==data_type
+        if data_type=="train":
+            filenames = self.filename+"ImageSets/Segmentation/test.txt"
+        elif data_type=="trainval":
+            filenames = self.filename+"ImageSets/Segmentation/test.txt"
+        elif data_type=="test":
+            filenames = self.filename+"ImageSets/Segmentation/test.txt"
+        else:
+            filenames = self.filename+"ImageSets/Segmentation/test.txt"
+
         lines_img = []
         lines_label = []
         with open(self.filename+"ImageSets/Segmentation/test.txt", 'r') as file_to_read:
