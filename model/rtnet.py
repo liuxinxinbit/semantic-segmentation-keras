@@ -18,7 +18,7 @@ import imgviz
 from .net_parts import build_conv2D_block, build_conv2Dtranspose_block
 
 class rtnet:
-    def __init__(self,  print_summary=False):
+    def __init__(self,  print_summary=False,num_class=3):
         self.parameter = [24,48,64,96,128,196]
         self.build(print_summary=print_summary)
         self.batch_generator =  None
@@ -116,10 +116,10 @@ class rtnet:
         conv2d_deconv0   = build_conv2Dtranspose_block(conv2d_deconv1_1, filters=self.parameter[0], kernel_size=4, strides=2)
 
 
-        output = Conv2DTranspose(filters=3, kernel_size=1, strides=1, activation='softmax', padding='same', name='output')(conv2d_deconv0)
+        output = Conv2DTranspose(filters=num_class, kernel_size=1, strides=1, activation='softmax', padding='same', name='output')(conv2d_deconv0)
             
         self.model = Model(inputs=inputs, outputs=output)
         if print_summary:
             print(self.model.summary())
         # ~ parallel_model = multi_gpu_model(self.model, gpus=1)
-        self.model.compile(optimizer='adam',loss='categorical_crossentropy',metrics=['accuracy', 'mse'])
+        self.model.compile(optimizer='adam',loss='categorical_crossentropy',metrics=['accuracy'])

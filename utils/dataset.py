@@ -81,24 +81,23 @@ class marine_data:
 
 
 class voc_data:
-    def __init__(self,data_dir='../marine_data/'):
-        self.filename = "../dataset/VOCdevkit/VOC2007/"
-        self.trainset  = self.read_traindata_names(data_dir)
-        self.num_train = len(self.trainset)
+    def __init__(self,data_dir="../dataset/VOCdevkit/VOC2007/",data_type="train"):
+        self.filename = data_dir
+        self.lines_img,self.lines_label  = self.voc_fileset(self.filename ,data_type)
+        self.num_train = len(self.lines_img)
 
-    def voc_fileset(self,data_type="train"):
+    def voc_fileset(self,fn,data_type="train"):
         if data_type=="train":
-            filenames = self.filename+"ImageSets/Segmentation/test.txt"
+            filenames = fn+"ImageSets/Segmentation/train.txt"
         elif data_type=="trainval":
-            filenames = self.filename+"ImageSets/Segmentation/test.txt"
+            filenames = fn+"ImageSets/Segmentation/trainval.txt"
         elif data_type=="test":
-            filenames = self.filename+"ImageSets/Segmentation/test.txt"
+            filenames = fn+"ImageSets/Segmentation/test.txt"
         else:
-            filenames = self.filename+"ImageSets/Segmentation/test.txt"
-
+            filenames = fn+"ImageSets/Segmentation/val.txt"
         lines_img = []
         lines_label = []
-        with open(self.filename+"ImageSets/Segmentation/test.txt", 'r') as file_to_read:
+        with open(filenames, 'r') as file_to_read:
             while True:
                 line = file_to_read.readline() # 整行读取数据
                 if not line:
@@ -106,17 +105,55 @@ class voc_data:
                 lines_img.append(self.filename+"JPEGImages/"+line[:-1]+".jpg")
                 lines_label.append(self.filename+"SegmentationClass/"+line[:-1]+".png")
         return lines_img,lines_label
+    def preprocess(self, pil_img, image_size=(512, 512)):
+        w, h = pil_img.size
+        newW, newH = max(w,h), max(w,h)
+        assert newW > 0 and newH > 0, 'Scale is too small'
+        
+        if len(np.array(pil_img).shape)==2:
+            new_img = np.zeros((newW, newH))
+        else:
+            new_img = np.zeros((newW, newH,3))
 
-    def BatchGenerator(self,batch_size=8, image_size=(448, 512, 3), labels=3):#500, 375
+        if w>h:
+            new_img[np.int16((w-h)/2):np.int16((w-h)/2+h),:] = pil_img
+        elif h>w:
+            new_img[:,np.int16((h-w)/2):np.int16((h-w)/2+w)] = pil_img
+        else:
+            new_img=pil_img
+        pil_img = pil_img.resize(image_size)
+        img_nd = np.array(pil_img)
+
+        # if len(img_nd.shape) == 2:
+        #     img_nd = np.expand_dims(img_nd, axis=2)
+
+        # HWC to CHW
+        # img_trans = img_nd.transpose((2, 0, 1))
+        # if img_nd.max() > 1:
+        #     img_trans = img_nd / 255
+
+        return img_nd
+
+    def BatchGenerator(self,batch_size=8, image_size=(512, 512, 3), labels=21):
+        index = range(self.num_train)
         while True:
             images = np.zeros((batch_size, image_size[0], image_size[1], image_size[2]))
             truths = np.zeros((batch_size, image_size[0], image_size[1], labels))
             for i in range(batch_size):
-                random_line = random.choice(self.trainset)
-                image,truth_mask,lbl_viz = self.json2data(random_line)
-                truth_mask=truth_mask+1
-                image, truth = random_crop_or_pad(image, truth_mask, image_size)
-                images[i] = image/255
-                truths[i] = (np.arange(labels) == truth[...,None]-1).astype(int) # encode to one-hot-vector
+                random_line = random.choice(index)
+                img = Image.open(self.lines_img[random_line])
+                mask = Image.open(self.lines_label[random_line])
+                assert img.size == mask.size, \
+                    f'Image and mask {random_line} should be the same size, but are {img.size} and {mask.size}'
+                
+                img = self.preprocess(img)
+                mask = self.preprocess(mask)
+                mask[mask==255]=0
+                mask=mask+1
+                images[i] = img/255
+                truths[i] = (np.arange(labels) == mask[...,None]-1).astype(int) # encode to one-hot-vector
             yield images, truths
 
+
+dataset = voc_data()
+dataset.BatchGenerator()

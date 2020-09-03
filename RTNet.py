@@ -34,3 +34,4 @@ def test():
 if __name__ == '__main__':
     md = marine_data()
     train(md)
+    # test()
