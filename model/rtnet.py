@@ -22,14 +22,15 @@ class rtnet:
         self.parameter = [24,48,64,96,128,196]
         self.build(print_summary=print_summary)
         self.batch_generator =  None
+        self.num_class = num_class
 
     def predict(self, image):
         return self.model.predict(np.array([image]))
     
-    def save(self, file_path='model.h5'):
+    def save(self, file_path='rt_model.h5'):
         self.model.save_weights(file_path)
         
-    def load(self, file_path='model.h5'):
+    def load(self, file_path='rt_model.h5'):
         self.model.load_weights(file_path)
             
     def train(self, epochs=10, steps_per_epoch=50,batch_size=32):
@@ -116,7 +117,7 @@ class rtnet:
         conv2d_deconv0   = build_conv2Dtranspose_block(conv2d_deconv1_1, filters=self.parameter[0], kernel_size=4, strides=2)
 
 
-        output = Conv2DTranspose(filters=num_class, kernel_size=1, strides=1, activation='softmax', padding='same', name='output')(conv2d_deconv0)
+        output = Conv2DTranspose(filters=self.num_class, kernel_size=1, strides=1, activation='softmax', padding='same', name='output')(conv2d_deconv0)
             
         self.model = Model(inputs=inputs, outputs=output)
         if print_summary:
