@@ -42,27 +42,29 @@ def _eval(dataset):
     mean_acc=0
     mean_mIoU = 0
     for i in range(images.shape[0]):
-        prediction = RTNet.predict(images[0,:,:,:])
+        prediction = RTNet.predict(images[i,:,:,:])
         metric = SegmentationMetric(num_class)
         prediction = np.argmax(prediction[0,:,:,:],-1)
+        # plt.imshow(prediction)
+        # plt.show()
         truth = np.argmax(truths[i,:,:,:],-1)
         metric.addBatch(prediction, truth)
         acc = metric.pixelAccuracy()
         mIoU = metric.meanIntersectionOverUnion()
         mean_acc+=acc
         mean_mIoU+=mIoU
-        print(acc,mIoU)
     print(mean_acc/images.shape[0], mean_mIoU/images.shape[0])
 if __name__ == '__main__':
     #marine data******************
-    num_class = 3
-    md = marine_data()
-    # train(md)
-    # test()
-    _eval(md)
+    # num_class = 3
+    # md = marine_data()
+    # # train(md)
+    # # test()
+    # _eval(md)
     #voc data*********************
-    # num_class = 21
-    # voc = voc_data()
-    # train(voc)
-    # test()
+    num_class = 21
+    voc = voc_data()
+    train(voc)
+    test()
+    _eval(voc)
     #*****************************
