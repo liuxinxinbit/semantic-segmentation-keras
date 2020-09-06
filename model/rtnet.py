@@ -18,11 +18,12 @@ import imgviz
 from .net_parts import build_conv2D_block, build_conv2Dtranspose_block
 
 class rtnet:
-    def __init__(self,  print_summary=False,num_class=3):
+    def __init__(self,  print_summary=False,image_size=(448, 512, 3),num_class=3):
         self.parameter = [24,48,64,96,128,196]
-        self.build(print_summary=print_summary)
-        self.batch_generator =  None
         self.num_class = num_class
+        self.build(print_summary=print_summary,image_size=image_size)
+        self.batch_generator =  None
+        
 
     def predict(self, image):
         return self.model.predict(np.array([image]))
@@ -36,8 +37,8 @@ class rtnet:
     def train(self, epochs=10, steps_per_epoch=50,batch_size=32):
         self.model.fit_generator(self.batch_generator, steps_per_epoch=steps_per_epoch, epochs=epochs)
 
-    def build(self, print_summary=False):
-        inputs = Input(shape=(448, 512, 3))
+    def build(self, print_summary=False,image_size=(448, 512, 3)):
+        inputs = Input(shape=image_size)
             
         # initial layer
         conv2d_conv0_1 = build_conv2D_block(inputs,        filters = self.parameter[0],kernel_size=1,strides=1)

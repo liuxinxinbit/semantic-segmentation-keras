@@ -7,7 +7,8 @@ from labelme import utils
 import imgviz
 import numpy as np
 import random
-
+import cv2
+from PIL import Image
 
 def json2data(json_file):
     data = json.load(open(json_file))
@@ -78,6 +79,69 @@ def random_crop_or_pad( image, truth=None, size=(448, 512)):
         return image, truth
     else:
         return image, truth
+
+def blur(img):
+    img = cv2.blur(img, (3, 3))
+    return img
+
+def add_noise(img):
+    for i in range(200): #添加点噪声
+        temp_x = np.random.randint(0,img.shape[0])
+        temp_y = np.random.randint(0,img.shape[1])
+        img[temp_x][temp_y] = 255
+    return img
+    
+def data_augment(xb):
+    if np.random.random() < 0.25:
+        xb = blur(xb)
+    
+    if np.random.random() < 0.2:
+        xb = add_noise(xb)
+        
+    return xb
+
+def preprocess(pil_img, pil_label=None,image_size=(512, 512)):
+    if pil_label is not None:
+        assert pil_img.size == pil_label.size,  'size erros'
+    w, h = pil_img.size
+    newW, newH = min(w,h), min(w,h)
+    assert newW > 0 and newH > 0, 'Scale is too small'
+        
+    new_label= np.zeros((newW, newH))
+    new_img = np.zeros((newW, newH,3))
+    pil_img = np.array(pil_img)
+    if pil_label is not None:
+        pil_label = np.array(pil_label)
+    if w>h:
+        new_img= pil_img[np.int16((w-h)/2):np.int16((w-h)/2)+h,:]
+        if pil_label is not None:
+            new_label = pil_label[np.int16((w-h)/2):np.int16((w-h)/2)+h,:]
+    elif h>w:
+        new_img = pil_img[:,np.int16((h-w)/2):np.int16((h-w)/2)+w]
+        if pil_label is not None:
+            new_label= pil_label[:,np.int16((h-w)/2):np.int16((h-w)/2)+w]
+    else:
+        new_img=pil_img
+        if pil_label is not None:
+            new_label=pil_label
+    new_label = Image.fromarray(new_label.astype('uint8'))
+    new_img = Image.fromarray(new_img.astype('uint8')).convert('RGB')
+    new_img = new_img.resize(image_size)
+    new_label = new_label.resize(image_size)
+    img_nd = np.array(new_img)
+    label_nd = np.array(new_label)
+
+    # if len(img_nd.shape) == 2:
+    #     img_nd = np.expand_dims(img_nd, axis=2)
+
+    # HWC to CHW
+    # img_trans = img_nd.transpose((2, 0, 1))
+    # if img_nd.max() > 1:
+    #     img_trans = img_nd / 255
+    img_nd = data_augment(img_nd)
+    return img_nd,label_nd
+
+
 
 # files_list=[]
 # for i in range(12):
