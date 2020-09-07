@@ -44,47 +44,47 @@ class rtnet:
         conv2d_conv0_1 = build_conv2D_block(inputs,        filters = self.parameter[0],kernel_size=1,strides=1)
         conv2d_conv0   = build_conv2D_block(conv2d_conv0_1,filters = self.parameter[0],kernel_size=3,strides=1)
         ###########
-        conv2d_conv0   = build_conv2D_block(conv2d_conv0,filters = self.parameter[0],kernel_size=3,strides=1)
-        conv2d_conv0   = build_conv2D_block(conv2d_conv0,filters = self.parameter[0],kernel_size=3,strides=1)
-        conv2d_conv0   = build_conv2D_block(conv2d_conv0,filters = self.parameter[0],kernel_size=3,strides=1)
+        conv2d_conv0   = build_conv2D_block(conv2d_conv0,filters = self.parameter[0],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv0   = build_conv2D_block(conv2d_conv0,filters = self.parameter[0],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv0   = build_conv2D_block(conv2d_conv0,filters = self.parameter[0],kernel_size=3,strides=1,dilation_rate=(3, 3))
         # first conv layer
         conv2d_conv1_1 = build_conv2D_block(conv2d_conv0,  filters = self.parameter[1],kernel_size=3,strides=2)
         conv2d_conv1   = build_conv2D_block(conv2d_conv1_1,filters = self.parameter[1],kernel_size=3,strides=1)
         ###########
-        conv2d_conv1   = build_conv2D_block(conv2d_conv1,filters = self.parameter[1],kernel_size=3,strides=1)
-        conv2d_conv1   = build_conv2D_block(conv2d_conv1,filters = self.parameter[1],kernel_size=3,strides=1)
-        conv2d_conv1   = build_conv2D_block(conv2d_conv1,filters = self.parameter[1],kernel_size=3,strides=1)
+        conv2d_conv1   = build_conv2D_block(conv2d_conv1,filters = self.parameter[1],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv1   = build_conv2D_block(conv2d_conv1,filters = self.parameter[1],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv1   = build_conv2D_block(conv2d_conv1,filters = self.parameter[1],kernel_size=3,strides=1,dilation_rate=(3, 3))
         # second conv layer
         conv2d_conv2_2 = build_conv2D_block(conv2d_conv1,  filters = self.parameter[2],kernel_size=3,strides=2)
         conv2d_conv2_1 = build_conv2D_block(conv2d_conv2_2,filters = self.parameter[2],kernel_size=3,strides=1)
         conv2d_conv2   = build_conv2D_block(conv2d_conv2_1,filters = self.parameter[2],kernel_size=3,strides=1)
         ###########
-        conv2d_conv2   = build_conv2D_block(conv2d_conv2,filters = self.parameter[2],kernel_size=3,strides=1)
-        conv2d_conv2   = build_conv2D_block(conv2d_conv2,filters = self.parameter[2],kernel_size=3,strides=1)
-        conv2d_conv2   = build_conv2D_block(conv2d_conv2,filters = self.parameter[2],kernel_size=3,strides=1)
+        conv2d_conv2   = build_conv2D_block(conv2d_conv2,filters = self.parameter[2],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv2   = build_conv2D_block(conv2d_conv2,filters = self.parameter[2],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv2   = build_conv2D_block(conv2d_conv2,filters = self.parameter[2],kernel_size=3,strides=1,dilation_rate=(3, 3))
         # third conv layer
         conv2d_conv3_2 = build_conv2D_block(conv2d_conv2,  filters = self.parameter[3],kernel_size=3,strides=2)
         conv2d_conv3_1 = build_conv2D_block(conv2d_conv3_2,filters = self.parameter[3],kernel_size=3,strides=1)
         conv2d_conv3   = build_conv2D_block(conv2d_conv3_1,filters = self.parameter[3],kernel_size=3,strides=1)
         ###########
-        conv2d_conv3   = build_conv2D_block(conv2d_conv3,filters = self.parameter[3],kernel_size=3,strides=1)
-        conv2d_conv3   = build_conv2D_block(conv2d_conv3,filters = self.parameter[3],kernel_size=3,strides=1)
-        conv2d_conv3   = build_conv2D_block(conv2d_conv3,filters = self.parameter[3],kernel_size=3,strides=1)
+        conv2d_conv3   = build_conv2D_block(conv2d_conv3,filters = self.parameter[3],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv3   = build_conv2D_block(conv2d_conv3,filters = self.parameter[3],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv3   = build_conv2D_block(conv2d_conv3,filters = self.parameter[3],kernel_size=3,strides=1,dilation_rate=(3, 3))
         # fourth conv layer
         conv2d_conv4_2 = build_conv2D_block(conv2d_conv3,  filters = self.parameter[4],kernel_size=3,strides=2)
         conv2d_conv4_1 = build_conv2D_block(conv2d_conv4_2,filters = self.parameter[4],kernel_size=3,strides=1)
         conv2d_conv4   = build_conv2D_block(conv2d_conv4_1,filters = self.parameter[4],kernel_size=3,strides=1)
         ###########
-        conv2d_conv4   = build_conv2D_block(conv2d_conv4,filters = self.parameter[4],kernel_size=3,strides=1)
-        conv2d_conv4   = build_conv2D_block(conv2d_conv4,filters = self.parameter[4],kernel_size=3,strides=1)
-        conv2d_conv4   = build_conv2D_block(conv2d_conv4,filters = self.parameter[4],kernel_size=3,strides=1)
+        conv2d_conv4   = build_conv2D_block(conv2d_conv4,filters = self.parameter[4],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv4   = build_conv2D_block(conv2d_conv4,filters = self.parameter[4],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv4   = build_conv2D_block(conv2d_conv4,filters = self.parameter[4],kernel_size=3,strides=1,dilation_rate=(3, 3))
         # fifth conv layer
         conv2d_conv5_1 = build_conv2D_block(conv2d_conv4,  filters = self.parameter[5],kernel_size=3,strides=2)
         conv2d_conv5   = build_conv2D_block(conv2d_conv5_1,filters = self.parameter[5],kernel_size=3,strides=1)
         ###########
-        conv2d_conv5   = build_conv2D_block(conv2d_conv5,filters = self.parameter[5],kernel_size=3,strides=1)
-        conv2d_conv5   = build_conv2D_block(conv2d_conv5,filters = self.parameter[5],kernel_size=3,strides=1)
-        conv2d_conv5   = build_conv2D_block(conv2d_conv5,filters = self.parameter[5],kernel_size=3,strides=1)
+        conv2d_conv5   = build_conv2D_block(conv2d_conv5,filters = self.parameter[5],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv5   = build_conv2D_block(conv2d_conv5,filters = self.parameter[5],kernel_size=3,strides=1,dilation_rate=(3, 3))
+        conv2d_conv5   = build_conv2D_block(conv2d_conv5,filters = self.parameter[5],kernel_size=3,strides=1,dilation_rate=(3, 3))
         # fifth deconv layer
         conv2d_deconv5_1 = build_conv2D_block(conv2d_conv5,filters = self.parameter[5],kernel_size=3,strides=1)
         conv2d_deconv4   = build_conv2Dtranspose_block(conv2d_deconv5_1, filters=self.parameter[4], kernel_size=4,strides=2)

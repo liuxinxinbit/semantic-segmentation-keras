@@ -2,8 +2,8 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambd
 
 
 
-def build_conv2D_block( inputs, filters, kernel_size, strides):
-    conv2d = Conv2D(filters = filters, kernel_size=kernel_size,strides=strides, padding='same')(inputs)
+def build_conv2D_block( inputs, filters, kernel_size, strides,dilation_rate=(1, 1)):
+    conv2d = Conv2D(filters = filters, kernel_size=kernel_size,strides=strides, padding='same',dilation_rate=dilation_rate)(inputs)
     conv2d = BatchNormalization()(conv2d)
     conv2d_output = Activation(LeakyReLU(alpha=0.1))(conv2d)
     return conv2d_output

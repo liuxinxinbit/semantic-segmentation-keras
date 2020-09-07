@@ -56,15 +56,15 @@ def _eval(dataset):
     print(mean_acc/images.shape[0], mean_mIoU/images.shape[0])
 if __name__ == '__main__':
     #marine data******************
-    # num_class = 3
-    # md = marine_data()
-    # # train(md)
-    # # test()
-    # _eval(md)
-    #voc data*********************
-    num_class = 21
-    voc = voc_data()
-    train(voc)
+    num_class = 3
+    md = marine_data()
+    train(md)
     test()
-    _eval(voc)
+    _eval(md)
+    #voc data*********************
+    # num_class = 21
+    # voc = voc_data()
+    # train(voc)
+    # test()
+    # _eval(voc)
     #*****************************
