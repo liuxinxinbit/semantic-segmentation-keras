@@ -132,13 +132,11 @@ class voc_data:
                 mask = Image.open(self.lines_label[random_line])
                 assert img.size == mask.size, \
                     f'Image and mask {random_line} should be the same size, but are {img.size} and {mask.size}'
-                img = Image.fromarray(img.astype('uint8')).convert('RGB')
-                mask = Image.fromarray(mask.astype('uint8'))
                 img,mask = preprocess(img,mask)
                 mask[mask==255]=0
                 mask=mask+1
-                images[i] = img/255
-                truths[i] = (np.arange(labels) == mask[...,None]-1).astype(int) # encode to one-hot-vector
+                images[i,:,:,:] = img/255
+                truths[i,:,:,:] = (np.arange(labels) == mask[...,None]-1).astype(int) # encode to one-hot-vector
             yield images, truths
     def eval_data(self,batch_size=8, image_size=(512, 512, 3), labels=21):
         index = range(self.num_train)
@@ -148,10 +146,10 @@ class voc_data:
             random_line = random.choice(index)
             img = Image.open(self.lines_img[random_line])
             mask = Image.open(self.lines_label[random_line])
+            # plt.imshow(np.array(mask))
+            # plt.show()
             assert img.size == mask.size, \
                 f'Image and mask {random_line} should be the same size, but are {img.size} and {mask.size}'
-            img = Image.fromarray(img.astype('uint8')).convert('RGB')
-            mask = Image.fromarray(mask.astype('uint8'))
             img,mask = preprocess(img,mask)
             mask[mask==255]=0
             mask=mask+1
@@ -161,4 +159,4 @@ class voc_data:
 
 
 # dataset = voc_data()
-# dataset.BatchGenerator()
+# dataset.eval_data()
