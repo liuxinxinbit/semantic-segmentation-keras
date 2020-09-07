@@ -27,10 +27,10 @@ class unet:
     def predict(self, image):
         return self.model.predict(np.array([image]))
     
-    def save(self, file_path='rt_model.h5'):
+    def save(self, file_path='unet_model.h5'):
         self.model.save_weights(file_path)
         
-    def load(self, file_path='rt_model.h5'):
+    def load(self, file_path='unet_model.h5'):
         self.model.load_weights(file_path)
             
     def train(self, epochs=10, steps_per_epoch=50,batch_size=32):
