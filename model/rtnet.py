@@ -35,7 +35,7 @@ class rtnet:
         self.model.load_weights(file_path)
             
     def train(self, epochs=10, steps_per_epoch=50,batch_size=32):
-        self.model.fit_generator(self.batch_generator, steps_per_epoch=steps_per_epoch, epochs=epochs)
+        self.model.fit(self.batch_generator, steps_per_epoch=steps_per_epoch, epochs=epochs)
 
     def build(self, print_summary=False,image_size=(448, 512, 3)):
         inputs = Input(shape=image_size)

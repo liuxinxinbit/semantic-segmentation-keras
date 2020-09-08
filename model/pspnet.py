@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras import Model, Input
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, Activation,concatenate,LeakyReLU,AveragePooling2D,DepthwiseConv2D
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, Activation,concatenate,LeakyReLU,AveragePooling2D,DepthwiseConv2D,ZeroPadding2D
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import load_model, save_model
 from tensorflow.keras.utils import multi_gpu_model
@@ -17,7 +17,74 @@ from labelme import utils
 import imgviz
 from .net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block,build_DepthwiseConv2D_block
 
-class fast_scnn:
+def BN():
+    return BatchNormalization(momentum=0.95, epsilon=1e-5)
+
+def residual_conv(prev, level, pad=1, lvl=1, sub_lvl=1, modify_stride=False):
+    if modify_stride is False:
+        prev = build_conv2D_block(prev, filters=64 * level, kernel_size=1, strides=1)
+    elif modify_stride is True:
+        prev = build_conv2D_block(prev, filters=64 * level, kernel_size=1, strides=2)
+
+    prev = BN()(prev)
+    prev = Activation('relu')(prev)
+
+    prev = ZeroPadding2D(padding=(pad, pad))(prev)
+    prev = Conv2D(64 * level, (3, 3), strides=(1, 1), dilation_rate=pad, use_bias=False)(prev)
+
+    prev = BN()(prev)
+    prev = Activation('relu')(prev)
+    prev = Conv2D(256 * level, (1, 1), strides=(1, 1), use_bias=False)(prev)
+    prev = BN()(prev)
+    return prev
+
+
+def short_convolution_branch(prev, level, lvl=1, sub_lvl=1, modify_stride=False):
+    lvl = str(lvl)
+    sub_lvl = str(sub_lvl)
+    names = ["conv" + lvl + "_" + sub_lvl + "_1x1_proj",
+             "conv" + lvl + "_" + sub_lvl + "_1x1_proj_bn"]
+
+    if modify_stride is False:
+        prev = Conv2D(256 * level, (1, 1), strides=(1, 1), name=names[0],
+                      use_bias=False)(prev)
+    elif modify_stride is True:
+        prev = Conv2D(256 * level, (1, 1), strides=(2, 2), name=names[0],
+                      use_bias=False)(prev)
+
+    prev = BN(name=names[1])(prev)
+    return prev
+
+
+def empty_branch(prev):
+    return prev
+
+
+def residual_short(prev_layer, level, pad=1, lvl=1, sub_lvl=1, modify_stride=False):
+    prev_layer = Activation('relu')(prev_layer)
+    block_1 = residual_conv(prev_layer, level,
+                            pad=pad, lvl=lvl, sub_lvl=sub_lvl,
+                            modify_stride=modify_stride)
+
+    block_2 = short_convolution_branch(prev_layer, level,
+                                       lvl=lvl, sub_lvl=sub_lvl,
+                                       modify_stride=modify_stride)
+    added = Add()([block_1, block_2])
+    return added
+
+
+def residual_empty(prev_layer, level, pad=1, lvl=1, sub_lvl=1):
+    prev_layer = Activation('relu')(prev_layer)
+
+    block_1 = residual_conv(prev_layer, level, pad=pad,
+                            lvl=lvl, sub_lvl=sub_lvl)
+    block_2 = empty_branch(prev_layer)
+    added = Add()([block_1, block_2])
+    return added
+
+
+
+class pspnet:
     def __init__(self,  print_summary=False,image_size=(512, 512, 3),num_class=3):
         self.num_class = num_class
         self.build(print_summary=print_summary,image_size=image_size)
@@ -26,28 +93,28 @@ class fast_scnn:
     def predict(self, image):
         return self.model.predict(np.array([image]))
     
-    def save(self, file_path='fastscnn_model.h5'):
+    def save(self, file_path='pspnet_model.h5'):
         self.model.save_weights(file_path)
         
-    def load(self, file_path='fastscnn_model.h5'):
+    def load(self, file_path='pspnet_model.h5'):
         self.model.load_weights(file_path)
             
     def train(self, epochs=10, steps_per_epoch=50,batch_size=32):
         self.model.fit(self.batch_generator, steps_per_epoch=steps_per_epoch, epochs=epochs)
 
-    def build(self, print_summary=False,image_size=(448, 512, 3), num_classes=3, sub_region_sizes=[1, 2, 3, 6], expansion_factor=6):
-        inputs = Input(shape=image_size)
-        
-        learning_to_down_sample1   = build_conv2D_block(inputs,filters = 32,kernel_size=3,strides=2)
+    def build(self, print_summary=False,image_size=(448, 512, 3), num_classes=3):
+        inputdata = Input(shape=image_size)
 
-        learning_to_down_sample2   = build_conv2D_block(learning_to_down_sample1,filters = 48,kernel_size=3,strides=2)
+        cnv1 = build_conv2D_block(inputdata, filters=64, kernel_size=3, strides=2)
+        cnv1 = build_conv2D_block(cnv1, filters=64, kernel_size=3, strides=1)
+        cnv1 = build_conv2D_block(cnv1, filters=64, kernel_size=3, strides=1)
+        res = MaxPooling2D(pool_size=(3, 3), padding='same', strides=(2, 2))(cnv1)
 
-        learning_to_down_sample3   = build_conv2D_block(learning_to_down_sample2,filters = 64,kernel_size=3,strides=2)
 
-        skip_connection1 = learning_to_down_sample1
-        skip_connection2 = learning_to_down_sample2
-        skip_connection3 = learning_to_down_sample3
-        
+
+
+
+
         # Global feature extractor
 
         global_feature_extractor1 = bottleneck(learning_to_down_sample3,

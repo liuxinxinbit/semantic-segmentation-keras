@@ -34,7 +34,7 @@ class unet:
         self.model.load_weights(file_path)
             
     def train(self, epochs=10, steps_per_epoch=50,batch_size=32):
-        self.model.fit_generator(self.batch_generator, steps_per_epoch=steps_per_epoch, epochs=epochs)
+        self.model.fit(self.batch_generator, steps_per_epoch=steps_per_epoch, epochs=epochs)
 
     def build(self, print_summary=False, bilinear=True):
         factor = 2 if bilinear else 1
