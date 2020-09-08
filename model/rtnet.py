@@ -46,7 +46,7 @@ class rtnet:
         ###########
         conv2d_conv0   = build_conv2D_block(conv2d_conv0,filters = self.parameter[0],kernel_size=3,strides=1,dilation_rate=(3, 3))
         conv2d_conv0_dilation   = build_conv2D_block(conv2d_conv0,filters = self.parameter[0],kernel_size=3,strides=1,dilation_rate=(5, 5))
-        conv2d_conv0_dilation2   = build_conv2D_block(conv2d_conv0,filters = self.parameter[0],kernel_size=3,strides=1,dilation_rate=(9, 9))
+        conv2d_conv0_dilation2   = build_conv2D_block(conv2d_conv0_dilation,filters = self.parameter[0],kernel_size=3,strides=1,dilation_rate=(9, 9))
         conv2d_conv0 = Add()([conv2d_conv0, conv2d_conv0_dilation,conv2d_conv0_dilation2])
         # conv2d_conv0 = concatenate([conv2d_conv0, conv2d_conv0_dilation,conv2d_conv0_dilation2] , axis=-1)
         conv2d_conv0   = build_conv2D_block(conv2d_conv0,filters = self.parameter[0],kernel_size=3,strides=1,dilation_rate=(3, 3))
@@ -56,7 +56,7 @@ class rtnet:
         ###########
         conv2d_conv1   = build_conv2D_block(conv2d_conv1,filters = self.parameter[1],kernel_size=3,strides=1,dilation_rate=(3, 3))
         conv2d_conv1_dilation   = build_conv2D_block(conv2d_conv1,filters = self.parameter[1],kernel_size=3,strides=1,dilation_rate=(5, 5))
-        conv2d_conv1_dilation2   = build_conv2D_block(conv2d_conv1,filters = self.parameter[1],kernel_size=3,strides=1,dilation_rate=(9, 9))
+        conv2d_conv1_dilation2   = build_conv2D_block(conv2d_conv1_dilation,filters = self.parameter[1],kernel_size=3,strides=1,dilation_rate=(9, 9))
         conv2d_conv1 = Add()([conv2d_conv1, conv2d_conv1_dilation,conv2d_conv1_dilation2])
         # conv2d_conv1 = concatenate([conv2d_conv1, conv2d_conv1_dilation] , axis=-1)
         conv2d_conv1   = build_conv2D_block(conv2d_conv1,filters = self.parameter[1],kernel_size=3,strides=1,dilation_rate=(3, 3))
@@ -67,7 +67,7 @@ class rtnet:
         ###########
         conv2d_conv2   = build_conv2D_block(conv2d_conv2,filters = self.parameter[2],kernel_size=3,strides=1,dilation_rate=(3, 3))
         conv2d_conv2_dilation   = build_conv2D_block(conv2d_conv2,filters = self.parameter[2],kernel_size=3,strides=1,dilation_rate=(5, 5))
-        conv2d_conv2_dilation2   = build_conv2D_block(conv2d_conv2,filters = self.parameter[2],kernel_size=3,strides=1,dilation_rate=(9, 9))
+        conv2d_conv2_dilation2   = build_conv2D_block(conv2d_conv2_dilation,filters = self.parameter[2],kernel_size=3,strides=1,dilation_rate=(9, 9))
         conv2d_conv2 = Add()([conv2d_conv2, conv2d_conv2_dilation,conv2d_conv2_dilation2])
         # conv2d_conv2 = concatenate([conv2d_conv2, conv2d_conv2_dilation] , axis=-1)
         conv2d_conv2   = build_conv2D_block(conv2d_conv2,filters = self.parameter[2],kernel_size=3,strides=1,dilation_rate=(3, 3))
@@ -78,7 +78,7 @@ class rtnet:
         ###########
         conv2d_conv3   = build_conv2D_block(conv2d_conv3,filters = self.parameter[3],kernel_size=3,strides=1,dilation_rate=(3, 3))
         conv2d_conv3_dilation   = build_conv2D_block(conv2d_conv3,filters = self.parameter[3],kernel_size=3,strides=1,dilation_rate=(5, 5))
-        conv2d_conv3_dilation2   = build_conv2D_block(conv2d_conv3,filters = self.parameter[3],kernel_size=3,strides=1,dilation_rate=(9, 9))
+        conv2d_conv3_dilation2   = build_conv2D_block(conv2d_conv3_dilation,filters = self.parameter[3],kernel_size=3,strides=1,dilation_rate=(9, 9))
         conv2d_conv3 = Add()([conv2d_conv3, conv2d_conv3_dilation,conv2d_conv3_dilation2])
         # conv2d_conv3 = concatenate([conv2d_conv3, conv2d_conv3_dilation] , axis=-1)
         conv2d_conv3   = build_conv2D_block(conv2d_conv3,filters = self.parameter[3],kernel_size=3,strides=1,dilation_rate=(3, 3))
@@ -89,7 +89,7 @@ class rtnet:
         ###########
         conv2d_conv4   = build_conv2D_block(conv2d_conv4,filters = self.parameter[4],kernel_size=3,strides=1,dilation_rate=(3, 3))
         conv2d_conv4_dilation   = build_conv2D_block(conv2d_conv4,filters = self.parameter[4],kernel_size=3,strides=1,dilation_rate=(5, 5))
-        conv2d_conv4_dilation2   = build_conv2D_block(conv2d_conv4,filters = self.parameter[4],kernel_size=3,strides=1,dilation_rate=(9, 9))
+        conv2d_conv4_dilation2   = build_conv2D_block(conv2d_conv4_dilation,filters = self.parameter[4],kernel_size=3,strides=1,dilation_rate=(9, 9))
         conv2d_conv4 = Add()([conv2d_conv4, conv2d_conv4_dilation,conv2d_conv4_dilation2])
         # conv2d_conv4 = concatenate([conv2d_conv4, conv2d_conv4_dilation] , axis=-1)
         conv2d_conv4   = build_conv2D_block(conv2d_conv4,filters = self.parameter[4],kernel_size=3,strides=1,dilation_rate=(3, 3))
@@ -99,7 +99,7 @@ class rtnet:
         ###########
         conv2d_conv5   = build_conv2D_block(conv2d_conv5,filters = self.parameter[5],kernel_size=3,strides=1,dilation_rate=(3, 3))
         conv2d_conv5_dilation   = build_conv2D_block(conv2d_conv5,filters = self.parameter[5],kernel_size=3,strides=1,dilation_rate=(5, 5))
-        conv2d_conv5_dilation2   = build_conv2D_block(conv2d_conv5,filters = self.parameter[5],kernel_size=3,strides=1,dilation_rate=(9, 9))
+        conv2d_conv5_dilation2   = build_conv2D_block(conv2d_conv5_dilation,filters = self.parameter[5],kernel_size=3,strides=1,dilation_rate=(9, 9))
         conv2d_conv5 = Add()([conv2d_conv5, conv2d_conv5_dilation,conv2d_conv5_dilation2])
         # conv2d_conv5 = concatenate([conv2d_conv5, conv2d_conv5_dilation] , axis=-1)
         conv2d_conv5   = build_conv2D_block(conv2d_conv5,filters = self.parameter[5],kernel_size=3,strides=1,dilation_rate=(3, 3))

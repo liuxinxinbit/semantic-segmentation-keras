@@ -15,16 +15,14 @@ import json
 import matplotlib.pyplot as plt 
 from labelme import utils
 import imgviz
-from .net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block
+from .net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block,build_DepthwiseConv2D_block
 
-class rtnet:
-    def __init__(self,  print_summary=False,image_size=(448, 512, 3),num_class=3):
-        self.parameter = [24,48,64,96,128,196]
+class fast_scnn:
+    def __init__(self,  print_summary=False,image_size=(512, 512, 3),num_class=3):
         self.num_class = num_class
         self.build(print_summary=print_summary,image_size=image_size)
         self.batch_generator =  None
         
-
     def predict(self, image):
         return self.model.predict(np.array([image]))
     
@@ -79,7 +77,7 @@ class rtnet:
         # Feature fusion
 
         conv2d_deconv5_1 = build_conv2D_block(global_feature_extractor,filters = 196,kernel_size=3,strides=1)
-        conv2d_deconv4   = build_conv2Dtranspose_block(conv2d_deconv5_1, filters=self.parameter[4], kernel_size=4, strides=2)
+        conv2d_deconv4   = build_conv2Dtranspose_block(conv2d_deconv5_1, filters=196, kernel_size=4, strides=2)
 
         #Concat4
         Concat_concat4 = concatenate([conv2d_deconv4, global_feature_extractor1] , axis=-1)
@@ -92,15 +90,11 @@ class rtnet:
 
         feature_fusion_main_branch = build_DepthwiseConv2D_block(feature_fusion_main_branch,filters = 3)
 
-        feature_fusion_main_branch = Conv2D(
-            128, 1, 1, padding="same")(feature_fusion_main_branch)
-        feature_fusion_main_branch = BatchNormalization()(
-            feature_fusion_main_branch)
+        feature_fusion_main_branch = Conv2D(128, 1, 1, padding="same")(feature_fusion_main_branch)
+        feature_fusion_main_branch = BatchNormalization()(feature_fusion_main_branch)
 
-        feature_fusion_skip_connection = Conv2D(
-            128, 1, 1, padding="same")(skip_connection3)
-        feature_fusion_skip_connection = BatchNormalization()(
-            feature_fusion_skip_connection)
+        feature_fusion_skip_connection = Conv2D(128, 1, 1, padding="same")(skip_connection3)
+        feature_fusion_skip_connection = BatchNormalization()(feature_fusion_skip_connection)
 
         feature_fusion = feature_fusion_main_branch + feature_fusion_skip_connection
 

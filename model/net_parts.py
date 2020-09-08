@@ -2,20 +2,33 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambd
 
 import tensorflow as tf
 # from tensorflow import keras
-
+def BN(name=""):
+    return BatchNormalization(momentum=0.95, name=name, epsilon=1e-5)
 
 def build_conv2D_block( inputs, filters, kernel_size, strides,dilation_rate=(1, 1)):
     conv2d = Conv2D(filters = filters, kernel_size=kernel_size,strides=strides, padding='same',dilation_rate=dilation_rate)(inputs)
-    conv2d = BatchNormalization()(conv2d)
+    conv2d = BN(conv2d)
     conv2d_output = Activation(LeakyReLU(alpha=0.1))(conv2d)
     return conv2d_output
 
 def build_conv2Dtranspose_block( inputs, filters, kernel_size, strides):
     conv2d = Conv2DTranspose(filters=filters, kernel_size=kernel_size, strides=strides, use_bias=True,bias_initializer='zeros', padding='same')(inputs)
-    conv2d = BatchNormalization()(conv2d)
+    conv2d = BN(conv2d)
     conv2d_deconv = Activation(LeakyReLU(alpha=0.1))(conv2d)
     return conv2d_deconv
 
+def build_DepthwiseConv2D_block(inputs, filters):
+    Depthwiseconv2d = DepthwiseConv2D(filters, padding="same")(inputs)
+    Depthwiseconv2d = BN(Depthwiseconv2d)
+    Depthwiseconv2d = Activation(LeakyReLU(alpha=0.1))(Depthwiseconv2d)
+    return Depthwiseconv2d
+
+def build_SeparableConv2D_block(inputs, filters,kernel_size,strides):
+    Separableconv2d = SeparableConv2D(filters,kernel_size,strides, padding="same")(inputs)
+    Separableconv2d = BN(Separableconv2d)
+    Separableconv2d = Activation(LeakyReLU(alpha=0.1))(Separableconv2d)
+    return Separableconv2d
+    
 def pyramid_pooling(input_tensor, sub_region_sizes):
     """This class implements the Pyramid Pooling Module
 
@@ -112,14 +125,3 @@ def bottleneck(input_tensor, filters, strides, expansion_factor):
     output_tensor = Activation('relu')(tensor)
     return output_tensor
 
-def build_DepthwiseConv2D_block(inputs, filters):
-    Depthwiseconv2d = DepthwiseConv2D(filters, padding="same")(inputs)
-    Depthwiseconv2d = BatchNormalization()(Depthwiseconv2d)
-    Depthwiseconv2d = Activation(LeakyReLU(alpha=0.1))(Depthwiseconv2d)
-    return Depthwiseconv2d
-
-def build_SeparableConv2D_block(inputs, filters,kernel_size,strides):
-    Separableconv2d = SeparableConv2D(filters,kernel_size,strides, padding="same")(inputs)
-    Separableconv2d = BatchNormalization()(Separableconv2d)
-    Separableconv2d = Activation(LeakyReLU(alpha=0.1))(Separableconv2d)
-    return Separableconv2d

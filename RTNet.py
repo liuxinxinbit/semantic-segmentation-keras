@@ -34,6 +34,7 @@ def test():
         plt.imshow(result)
         plt.pause(0.01)
         plt.clf()
+
 def _eval(dataset):
     images, truths = dataset.eval_data(batch_size=8,image_size=(512, 512, 3),labels=num_class)
     print(truths.shape)
@@ -54,13 +55,14 @@ def _eval(dataset):
         mean_acc+=acc
         mean_mIoU+=mIoU
     print(mean_acc/images.shape[0], mean_mIoU/images.shape[0])
+
 if __name__ == '__main__':
     #marine data******************
-    # num_class = 3
-    # md = marine_data()
-    # train(md)
-    # test()
-    # _eval(md)
+    num_class = 3
+    md = marine_data()
+    train(md)
+    test()
+    _eval(md)
     #voc data*********************
     # num_class = 21
     # voc = voc_data()
