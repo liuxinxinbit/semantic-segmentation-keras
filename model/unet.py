@@ -20,9 +20,10 @@ from .net_parts import build_conv2D_block, build_conv2Dtranspose_block
 class unet:
     def __init__(self,  print_summary=False,image_size=(512, 512, 3),num_class=3):
         self.parameter = [64,128,256,512,1024]
+        self.num_class = num_class
         self.build(print_summary=print_summary,image_size=(512, 512, 3),bilinear=False)
         self.batch_generator =  None
-        self.num_class = num_class
+        
 
     def predict(self, image):
         return self.model.predict(np.array([image]))
@@ -45,22 +46,22 @@ class unet:
         conv2d_conv0   = build_conv2D_block(conv2d_conv0_1,filters = self.parameter[0],kernel_size=3,strides=1)
  
         # first conv layer
-        max_d1 = MaxPooling2D(conv2d_conv0)
+        max_d1 = MaxPooling2D()(conv2d_conv0)
         conv2d_conv1_1 = build_conv2D_block(max_d1,  filters = self.parameter[1],kernel_size=3,strides=1)
         conv2d_conv1   = build_conv2D_block(conv2d_conv1_1,filters = self.parameter[1],kernel_size=3,strides=1)
    
         # second conv layer
-        max_d2 = MaxPooling2D(conv2d_conv1)
+        max_d2 = MaxPooling2D()(conv2d_conv1)
         conv2d_conv2_2 = build_conv2D_block(max_d2,  filters = self.parameter[2],kernel_size=3,strides=1)
         conv2d_conv2_1 = build_conv2D_block(conv2d_conv2_2,filters = self.parameter[2],kernel_size=3,strides=1)
 
         # third conv layer
-        max_d3 = MaxPooling2D(conv2d_conv2_1)
+        max_d3 = MaxPooling2D()(conv2d_conv2_1)
         conv2d_conv3_2 = build_conv2D_block(max_d3,  filters = self.parameter[3],kernel_size=3,strides=1)
         conv2d_conv3_1 = build_conv2D_block(conv2d_conv3_2,filters = self.parameter[3],kernel_size=3,strides=1)
 
         # fourth conv layer
-        max_d4 = MaxPooling2D(conv2d_conv3_1)
+        max_d4 = MaxPooling2D()(conv2d_conv3_1)
         conv2d_conv4_2 = build_conv2D_block(max_d4,  filters = self.parameter[4]/factor,kernel_size=3,strides=1)
         conv2d_conv4_1 = build_conv2D_block(conv2d_conv4_2,filters = self.parameter[4]/factor,kernel_size=3,strides=1)
 

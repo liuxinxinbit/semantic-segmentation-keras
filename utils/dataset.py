@@ -20,7 +20,7 @@ import json
 import matplotlib.pyplot as plt 
 from labelme import utils
 import imgviz
-from data_process import preprocess, random_crop_or_pad
+from .data_process import preprocess, random_crop_or_pad
 import matplotlib 
 matplotlib.use('Agg') 
 
@@ -148,8 +148,8 @@ class voc_data:
             random_line = random.choice(index)
             img = Image.open(self.lines_img[random_line])
             mask = Image.open(self.lines_label[random_line])
-            plt.imshow(np.array(mask))
-            plt.show()
+            # plt.imshow(np.array(mask))
+            # plt.show()
             assert img.size == mask.size, \
                 f'Image and mask {random_line} should be the same size, but are {img.size} and {mask.size}'
             img,mask = preprocess(img,mask)
@@ -160,5 +160,5 @@ class voc_data:
         return images, truths
 
 
-dataset = voc_data()
-dataset.eval_data()
+# dataset = voc_data()
+# dataset.eval_data()
