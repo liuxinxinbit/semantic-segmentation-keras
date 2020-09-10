@@ -19,7 +19,7 @@ from .net_parts import build_conv2D_block, build_conv2Dtranspose_block
 
 class unet:
     def __init__(self,  print_summary=False,image_size=(512, 512, 3),num_class=3):
-        self.parameter = [64,128,256,512,1024]
+        self.parameter = [24,48,96,128,256]
         self.num_class = num_class
         self.build(print_summary=print_summary,image_size=(512, 512, 3),bilinear=False)
         self.batch_generator =  None
@@ -66,28 +66,28 @@ class unet:
         conv2d_conv4_1 = build_conv2D_block(conv2d_conv4_2,filters = self.parameter[4]/factor,kernel_size=3,strides=1)
 
         if bilinear:
-            up4 = UpSampling2D(conv2d_conv4_1)
+            up4 = UpSampling2D()(conv2d_conv4_1)
         else:
             up4   = build_conv2Dtranspose_block(conv2d_conv4_1, filters=self.parameter[4]/factor, kernel_size=4,strides=2)
         up_conv4 = build_conv2D_block(up4,  filters = self.parameter[4]/factor,kernel_size=3,strides=1)
         up_conv4 = build_conv2D_block(up_conv4,filters = self.parameter[4]/factor,kernel_size=3,strides=1)
 
         if bilinear:
-            up3 = UpSampling2D(up_conv4)
+            up3 = UpSampling2D()(up_conv4)
         else:
             up3   = build_conv2Dtranspose_block(up_conv4, filters=self.parameter[3]/factor, kernel_size=4,strides=2)
         up_conv3 = build_conv2D_block(up3,  filters = self.parameter[3]/factor,kernel_size=3,strides=1)
         up_conv3 = build_conv2D_block(up_conv3,filters = self.parameter[3]/factor,kernel_size=3,strides=1)
 
         if bilinear:
-            up2 = UpSampling2D(up_conv3)
+            up2 = UpSampling2D()(up_conv3)
         else:
             up2   = build_conv2Dtranspose_block(up_conv3, filters=self.parameter[2]/factor, kernel_size=4,strides=2)
         up_conv2 = build_conv2D_block(up2,  filters = self.parameter[2]/factor,kernel_size=3,strides=1)
         up_conv2 = build_conv2D_block(up_conv2,filters = self.parameter[2]/factor,kernel_size=3,strides=1)
 
         if bilinear:
-            up1 = UpSampling2D(up_conv2)
+            up1 = UpSampling2D()(up_conv2)
         else:
             up1   = build_conv2Dtranspose_block(up_conv2, filters=self.parameter[2]/factor, kernel_size=4,strides=2)
         up_conv1 = build_conv2D_block(up1,  filters = self.parameter[2]/factor,kernel_size=3,strides=1)

@@ -21,8 +21,8 @@ import matplotlib.pyplot as plt
 from labelme import utils
 import imgviz
 from .data_process import preprocess, random_crop_or_pad
-import matplotlib 
-matplotlib.use('Agg') 
+# import matplotlib 
+# matplotlib.use('Agg') 
 
 class marine_data:
     def __init__(self,data_dir='../marine_data/'):
