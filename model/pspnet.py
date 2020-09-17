@@ -1,11 +1,11 @@
 import tensorflow as tf
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, Activation,concatenate,\
-    LeakyReLU,AveragePooling2D,DepthwiseConv2D,ZeroPadding2D, Add
+    LeakyReLU,AveragePooling2D,DepthwiseConv2D,ZeroPadding2D, Add,UpSampling2D
 from tensorflow.keras import backend as K
+from tensorflow.keras import layers
 from tensorflow.keras.models import load_model, save_model
 from tensorflow.keras.utils import multi_gpu_model
-from tensorflow.keras.layers import LeakyReLU
 import os
 import random
 import numpy as np
@@ -16,10 +16,35 @@ import json
 import matplotlib.pyplot as plt 
 from labelme import utils
 import imgviz
+from math import ceil
+
+from torch.nn.modules import upsampling
 from net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block,build_DepthwiseConv2D_block
 
 def BN():
     return BatchNormalization(momentum=0.95, epsilon=1e-5)
+class Interp(layers.Layer):
+
+    def __init__(self, new_size, **kwargs):
+        self.new_size = new_size
+        super(Interp, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        super(Interp, self).build(input_shape)
+
+    def call(self, inputs, **kwargs):
+        new_height, new_width = self.new_size
+        resized = ktf.image.resize_images(inputs, [new_height, new_width],
+                                          align_corners=True)
+        return resized
+
+    def compute_output_shape(self, input_shape):
+        return tuple([None, self.new_size[0], self.new_size[1], input_shape[3]])
+
+    def get_config(self):
+        config = super(Interp, self).get_config()
+        config['new_size'] = self.new_size
+        return config
 
 def residual_conv(prev, level, modify_stride=False):
     if modify_stride is False:
@@ -119,11 +144,58 @@ class pspnet:
         res = Activation('relu')(res)
         return res
 
+    def interp_block(self, prev_layer, level, feature_map_shape, input_shape):
+        if input_shape == (512, 512):
+            kernel_strides_map = {1: 64,
+                                  2: 32,
+                                  3: 16,
+                                  6: 8}
+        elif input_shape == (713, 713):
+            kernel_strides_map = {1: 90,
+                                  2: 45,
+                                  3: 30,
+                                  6: 15}
+        else:
+            print("Pooling parameters for input shape ",
+                input_shape, " are not defined.")
+            exit(1)
+
+        kernel = (kernel_strides_map[level], kernel_strides_map[level])
+        strides = (kernel_strides_map[level], kernel_strides_map[level])
+        prev_layer = AveragePooling2D(kernel, strides=strides)(prev_layer)
+        prev_layer = Conv2D(512, (1, 1), strides=(1, 1),use_bias=False)(prev_layer)
+        prev_layer = BN()(prev_layer)
+        prev_layer = Activation('relu')(prev_layer)
+        print("*********",kernel_strides_map[1])
+        prev_layer = UpSampling2D(size=(int(kernel_strides_map[1]/level),int(kernel_strides_map[1]/level)))(prev_layer)
+        # prev_layer = Interp(feature_map_shape)(prev_layer)
+        return prev_layer
+
+    def build_pyramid_pooling_module(self, res, input_shape):
+        """Build the Pyramid Pooling Module."""
+        # ---PSPNet concat layers with Interpolation
+        feature_map_size = tuple(int(ceil(input_dim / 8.0))
+                                 for input_dim in input_shape)
+        print("PSP module will interpolate to a final feature map size of %s" %
+            (feature_map_size, ))
+
+        interp_block1 = self.interp_block(res, 1, feature_map_size, input_shape)
+        interp_block2 = self.interp_block(res, 2, feature_map_size, input_shape)
+        interp_block3 = self.interp_block(res, 3, feature_map_size, input_shape)
+        interp_block6 = self.interp_block(res, 6, feature_map_size, input_shape)
+
+        res = concatenate([res,
+                        interp_block6,
+                        interp_block3,
+                        interp_block2,
+                        interp_block1],-1)
+        return res
 
 
     def build(self, print_summary=False,image_size=(512, 512, 3), num_classes=3,resnet_layers=50):
         inputdata = Input(shape=image_size)
         res = self.ResNet(inputdata, layers=resnet_layers)
+        psp = self.build_pyramid_pooling_module(res, (image_size[0],image_size[1]))
 
         # output = Conv2DTranspose(filters=self.num_class, kernel_size=1, strides=1, activation='softmax', padding='same', name='output')(conv2d_deconv0)
             
