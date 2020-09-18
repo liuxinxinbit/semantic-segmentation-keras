@@ -1,9 +1,11 @@
 import tensorflow as tf
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, Activation,concatenate,\
-    LeakyReLU,AveragePooling2D,DepthwiseConv2D,ZeroPadding2D, Add,UpSampling2D
+    LeakyReLU,AveragePooling2D,DepthwiseConv2D,ZeroPadding2D, Add,UpSampling2D,Dropout
 from tensorflow.keras import backend as K
 from tensorflow.keras import layers
+from tensorflow.keras.optimizers import SGD
+
 from tensorflow.keras.models import load_model, save_model
 from tensorflow.keras.utils import multi_gpu_model
 import os
@@ -19,32 +21,10 @@ import imgviz
 from math import ceil
 
 from torch.nn.modules import upsampling
-from net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block,build_DepthwiseConv2D_block
+from .net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block,build_DepthwiseConv2D_block
 
 def BN():
     return BatchNormalization(momentum=0.95, epsilon=1e-5)
-class Interp(layers.Layer):
-
-    def __init__(self, new_size, **kwargs):
-        self.new_size = new_size
-        super(Interp, self).__init__(**kwargs)
-
-    def build(self, input_shape):
-        super(Interp, self).build(input_shape)
-
-    def call(self, inputs, **kwargs):
-        new_height, new_width = self.new_size
-        resized = ktf.image.resize_images(inputs, [new_height, new_width],
-                                          align_corners=True)
-        return resized
-
-    def compute_output_shape(self, input_shape):
-        return tuple([None, self.new_size[0], self.new_size[1], input_shape[3]])
-
-    def get_config(self):
-        config = super(Interp, self).get_config()
-        config['new_size'] = self.new_size
-        return config
 
 def residual_conv(prev, level, modify_stride=False):
     if modify_stride is False:
@@ -91,7 +71,12 @@ def residual_empty(prev_layer, level):
     added = Add()([block_1, block_2])
     return added
 
-
+def Interp(x, shape):
+    ''' 对图片做一个放缩，配合Keras的Lambda层使用'''
+    # from keras.backend import tf as ktf
+    new_height, new_width = shape
+    resized = tf.image.resize(x, [new_height, new_width], method=tf.image.ResizeMethod.BILINEAR)
+    return resized
 
 class pspnet:
     def __init__(self,  print_summary=False,image_size=(512, 512, 3),num_class=3):
@@ -145,29 +130,22 @@ class pspnet:
         return res
 
     def interp_block(self, prev_layer, level, feature_map_shape, input_shape):
-        if input_shape == (512, 512):
+        if input_shape == (input_shape[0], input_shape[1]):
             kernel_strides_map = {1: 64,
                                   2: 32,
-                                  3: 16,
-                                  6: 8}
-        elif input_shape == (713, 713):
-            kernel_strides_map = {1: 90,
-                                  2: 45,
-                                  3: 30,
-                                  6: 15}
+                                  4: 16,
+                                  8: 8}
         else:
             print("Pooling parameters for input shape ",
                 input_shape, " are not defined.")
             exit(1)
-
         kernel = (kernel_strides_map[level], kernel_strides_map[level])
         strides = (kernel_strides_map[level], kernel_strides_map[level])
         prev_layer = AveragePooling2D(kernel, strides=strides)(prev_layer)
         prev_layer = Conv2D(512, (1, 1), strides=(1, 1),use_bias=False)(prev_layer)
         prev_layer = BN()(prev_layer)
         prev_layer = Activation('relu')(prev_layer)
-        print("*********",kernel_strides_map[1])
-        prev_layer = UpSampling2D(size=(int(kernel_strides_map[1]/level),int(kernel_strides_map[1]/level)))(prev_layer)
+        prev_layer = UpSampling2D(size=(int(feature_map_shape[0]/level),int(feature_map_shape[1]/level)))(prev_layer)
         # prev_layer = Interp(feature_map_shape)(prev_layer)
         return prev_layer
 
@@ -181,8 +159,8 @@ class pspnet:
 
         interp_block1 = self.interp_block(res, 1, feature_map_size, input_shape)
         interp_block2 = self.interp_block(res, 2, feature_map_size, input_shape)
-        interp_block3 = self.interp_block(res, 3, feature_map_size, input_shape)
-        interp_block6 = self.interp_block(res, 6, feature_map_size, input_shape)
+        interp_block3 = self.interp_block(res, 4, feature_map_size, input_shape)
+        interp_block6 = self.interp_block(res, 8, feature_map_size, input_shape)
 
         res = concatenate([res,
                         interp_block6,
@@ -196,12 +174,19 @@ class pspnet:
         inputdata = Input(shape=image_size)
         res = self.ResNet(inputdata, layers=resnet_layers)
         psp = self.build_pyramid_pooling_module(res, (image_size[0],image_size[1]))
+        x = build_conv2D_block(psp,512, (3, 3), strides=(1, 1),use_bias=False)
+        x = Dropout(0.1)(x)
+        x = Conv2D(num_classes, (1, 1), strides=(1, 1))(x)
+        x = Lambda(Interp, arguments={'shape': (image_size[0], image_size[1])})(x) # 使用Lambda层放缩到原图片大小
 
-        # output = Conv2DTranspose(filters=self.num_class, kernel_size=1, strides=1, activation='softmax', padding='same', name='output')(conv2d_deconv0)
-            
-        self.model = Model(inputs=inputdata, outputs=res)
+        x = Activation('softmax')(x)            
+        self.model = Model(inputs=inputdata, outputs=x)
         if print_summary:
             print(self.model.summary())
         # # ~ parallel_model = multi_gpu_model(self.model, gpus=1)
-        # self.model.compile(optimizer='adam',loss='categorical_crossentropy',metrics=['accuracy'])
-PSPNet = pspnet(image_size = (512, 512, 3),num_class=3,print_summary=True)
+        # Solver
+        sgd = SGD(lr=1e-3 , momentum=0.9, nesterov=True)
+        self.model.compile(optimizer=sgd,
+                    loss='categorical_crossentropy',
+                    metrics=['accuracy'])
+# PSPNet = pspnet(image_size = (512, 512, 3),num_class=3,print_summary=True)

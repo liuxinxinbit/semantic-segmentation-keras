@@ -5,14 +5,14 @@ import tensorflow as tf
 def BN(name=""):
     return BatchNormalization(momentum=0.95, epsilon=1e-5)
 
-def build_conv2D_block( inputs, filters, kernel_size, strides,dilation_rate=(1, 1)):
-    conv2d = Conv2D(filters = filters, kernel_size=kernel_size,strides=strides, padding='same',dilation_rate=dilation_rate)(inputs)
+def build_conv2D_block( inputs, filters, kernel_size, strides,dilation_rate=(1, 1),use_bias=True):
+    conv2d = Conv2D(filters = filters, kernel_size=kernel_size,strides=strides, padding='same',dilation_rate=dilation_rate,use_bias=use_bias)(inputs)
     conv2d = BatchNormalization(momentum=0.95, epsilon=1e-5)(conv2d)
     conv2d_output = Activation(LeakyReLU(alpha=0.1))(conv2d)
     return conv2d_output
 
-def build_conv2Dtranspose_block( inputs, filters, kernel_size, strides):
-    conv2d = Conv2DTranspose(filters=filters, kernel_size=kernel_size, strides=strides, use_bias=True,bias_initializer='zeros', padding='same')(inputs)
+def build_conv2Dtranspose_block( inputs, filters, kernel_size, strides,use_bias=True):
+    conv2d = Conv2DTranspose(filters=filters, kernel_size=kernel_size, strides=strides, use_bias=use_bias,bias_initializer='zeros', padding='same')(inputs)
     conv2d = BatchNormalization(momentum=0.95, epsilon=1e-5)(conv2d)
     conv2d_deconv = Activation(LeakyReLU(alpha=0.1))(conv2d)
     return conv2d_deconv
