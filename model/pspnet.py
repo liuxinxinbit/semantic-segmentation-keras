@@ -170,7 +170,7 @@ class pspnet:
         return res
 
 
-    def build(self, print_summary=False,image_size=(512, 512, 3), num_classes=3,resnet_layers=50):
+    def build(self, print_summary=False,image_size=(512, 512, 3), num_classes=3,resnet_layers=101):
         inputdata = Input(shape=image_size)
         res = self.ResNet(inputdata, layers=resnet_layers)
         psp = self.build_pyramid_pooling_module(res, (image_size[0],image_size[1]))
