@@ -16,7 +16,12 @@ import matplotlib.pyplot as plt
 from labelme import utils
 import imgviz
 from .net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block,build_DepthwiseConv2D_block
-
+def Interp(x, shape):
+    ''' 对图片做一个放缩，配合Keras的Lambda层使用'''
+    # from keras.backend import tf as ktf
+    new_height, new_width = shape
+    resized = tf.image.resize(x, [new_height, new_width], method=tf.image.ResizeMethod.BILINEAR)
+    return resized
 class fast_scnn:
     def __init__(self,  print_summary=False,image_size=(512, 512, 3),num_class=3):
         self.num_class = num_class
@@ -35,7 +40,7 @@ class fast_scnn:
     def train(self, epochs=10, steps_per_epoch=50,batch_size=32):
         self.model.fit(self.batch_generator, steps_per_epoch=steps_per_epoch, epochs=epochs)
 
-    def build(self, print_summary=False,image_size=(448, 512, 3), num_classes=3, sub_region_sizes=[1, 2, 3, 6], expansion_factor=6):
+    def build(self, print_summary=False,image_size=(512, 512, 3), num_classes=3, sub_region_sizes=[1, 2, 3, 6], expansion_factor=6):
         inputs = Input(shape=image_size)
         
         learning_to_down_sample1   = build_conv2D_block(inputs,filters = 32,kernel_size=3,strides=2)
@@ -103,23 +108,27 @@ class fast_scnn:
         classifier = build_SeparableConv2D_block( feature_fusion, 128,3,1)
         classifier = build_SeparableConv2D_block( classifier, 128,3,1)
         classifier   = build_conv2D_block(classifier,filters = 3,kernel_size=1,strides=1)
+
+        x = Conv2D(self.num_class, (1, 1), strides=(1, 1))(classifier)
+        x = Lambda(Interp, arguments={'shape': (image_size[0], image_size[1])})(x) # 使用Lambda层放缩到原图片大小
+        x = Activation('softmax')(x)    
         #Concat4
 
-        conv2d_deconv3_1 = build_conv2D_block(classifier,filters = 96,kernel_size=3,strides=1)
-        conv2d_deconv2   = build_conv2Dtranspose_block(conv2d_deconv3_1, filters=96, kernel_size=4, strides=2)
-        conv2d_deconv2 = concatenate([conv2d_deconv2, skip_connection2] , axis=-1)
+        # conv2d_deconv3_1 = build_conv2D_block(classifier,filters = 96,kernel_size=3,strides=1)
+        # conv2d_deconv2   = build_conv2Dtranspose_block(conv2d_deconv3_1, filters=96, kernel_size=4, strides=2)
+        # conv2d_deconv2 = concatenate([conv2d_deconv2, skip_connection2] , axis=-1)
 
-        conv2d_deconv2_1 = build_conv2D_block(conv2d_deconv2,filters = 64,kernel_size=3,strides=1)
-        conv2d_deconv1   = build_conv2Dtranspose_block(conv2d_deconv2_1, filters=64, kernel_size=4, strides=2)
-        #Concat4
-        conv2d_deconv3 = concatenate([conv2d_deconv1, skip_connection1] , axis=-1)
+        # conv2d_deconv2_1 = build_conv2D_block(conv2d_deconv2,filters = 64,kernel_size=3,strides=1)
+        # conv2d_deconv1   = build_conv2Dtranspose_block(conv2d_deconv2_1, filters=64, kernel_size=4, strides=2)
+        # #Concat4
+        # conv2d_deconv3 = concatenate([conv2d_deconv1, skip_connection1] , axis=-1)
 
-        conv2d_deconv1_1 = build_conv2D_block(conv2d_deconv3,filters = 24,kernel_size=3,strides=1)
-        conv2d_deconv0   = build_conv2Dtranspose_block(conv2d_deconv1_1, filters=24, kernel_size=4, strides=2)
+        # conv2d_deconv1_1 = build_conv2D_block(conv2d_deconv3,filters = 24,kernel_size=3,strides=1)
+        # conv2d_deconv0   = build_conv2Dtranspose_block(conv2d_deconv1_1, filters=24, kernel_size=4, strides=2)
 
-        output = Conv2DTranspose(filters=self.num_class, kernel_size=1, strides=1, activation='softmax', padding='same', name='output')(conv2d_deconv0)
+        # output = Conv2DTranspose(filters=self.num_class, kernel_size=1, strides=1, activation='softmax', padding='same', name='output')(conv2d_deconv0)
             
-        self.model = Model(inputs=inputs, outputs=output)
+        self.model = Model(inputs=inputs, outputs=x)
         if print_summary:
             print(self.model.summary())
         # ~ parallel_model = multi_gpu_model(self.model, gpus=1)

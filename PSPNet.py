@@ -16,7 +16,7 @@ image_size=(512, 512, 3)
 num_class=3
 def train(md):
     PSPNet = pspnet(image_size = image_size,num_class=num_class)
-    PSPNet.batch_generator = md.BatchGenerator(batch_size=4, image_size=(512, 512, 3), labels=num_class)
+    PSPNet.batch_generator = md.BatchGenerator(batch_size=2, image_size=(512, 512, 3), labels=num_class)
     PSPNet.train(epochs=10, steps_per_epoch=500)
     PSPNet.save()
 def test():
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     #marine data******************
     num_class = 3
     md = marine_data()
-    train(md)
+    # train(md)
     test()
     _eval(md)
     #voc data*********************
