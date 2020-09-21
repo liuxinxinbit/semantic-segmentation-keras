@@ -19,9 +19,7 @@ import matplotlib.pyplot as plt
 from labelme import utils
 import imgviz
 from math import ceil
-
-from torch.nn.modules import upsampling
-from .net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block,build_DepthwiseConv2D_block
+from model.net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block,build_DepthwiseConv2D_block
 
 def BN():
     return BatchNormalization(momentum=0.95, epsilon=1e-5)
