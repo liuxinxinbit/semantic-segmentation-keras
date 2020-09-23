@@ -1,4 +1,5 @@
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, Activation,concatenate,LeakyReLU,AveragePooling2D,DepthwiseConv2D,SeparableConv2D
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, Activation,concatenate,LeakyReLU,\
+    AveragePooling2D,DepthwiseConv2D,SeparableConv2D,Dropout
 
 import tensorflow as tf
 # from tensorflow import keras
@@ -124,4 +125,45 @@ def bottleneck(input_tensor, filters, strides, expansion_factor):
     tensor = BatchNormalization()(tensor)
     output_tensor = Activation('relu')(tensor)
     return output_tensor
+def Interp(x, shape):
+    ''' 对图片做一个放缩，配合Keras的Lambda层使用'''
+    # from keras.backend import tf as ktf
+    new_height, new_width = shape
+    resized = tf.image.resize(x, [new_height, new_width], method=tf.image.ResizeMethod.BILINEAR)
+    return resized
+def _ASPPModule(tensor, filters, kernel_size=(1, 1), strides=(1, 1), padding="same", dilation=(1, 1)):
+    tensor = Conv2D(filters=filters,kernel_size=kernel_size,strides=strides,padding=padding,dilation_rate=dilation)(tensor)
+    tensor = BatchNormalization()(tensor)
+    tensor = Activation('relu')(tensor)
+    return tensor
+def ASPP(tensor, output_stride):
+    if output_stride == 16:
+        dilations = [1, 6, 12, 18]
+    elif output_stride == 8:
+        dilations = [1, 12, 24, 36]
+    else:
+        raise NotImplementedError
+    aspp1 = _ASPPModule(tensor, filters=256, kernel_size=(1, 1), dilation=(dilations[0], dilations[0]))
+    aspp2 = _ASPPModule(tensor, filters=256, kernel_size=(3, 3), dilation=(dilations[1], dilations[1]))
+    aspp3 = _ASPPModule(tensor, filters=256, kernel_size=(3, 3), dilation=(dilations[2], dilations[2]))
+    aspp4 = _ASPPModule(tensor, filters=256, kernel_size=(3, 3), dilation=(dilations[3], dilations[3]))
+    global_avg_pool = AveragePooling2D(pool_size=(tensor.shape[1],tensor.shape[2]))(tensor)
+    global_avg_pool = build_conv2D_block( global_avg_pool, filters=256, kernel_size=(1, 1), strides=(1, 1))
+    global_avg_pool = Interp(global_avg_pool,[aspp4.shape[1],aspp4.shape[2]])
 
+    x = concatenate([aspp1,aspp2,aspp3,aspp4,global_avg_pool],axis=-1)
+
+    x = build_conv2D_block( x, filters=256, kernel_size=(1, 1), strides=(1, 1),use_bias=False)
+    x = Dropout(0.5)(x)
+    return x
+def Decoder(x, low_level_feat,num_classes):
+    low_level_feat = build_conv2D_block(low_level_feat, filters=48, kernel_size=(1, 1), strides=(1, 1),use_bias=False)
+    x = Interp(x,[low_level_feat.shape[1],low_level_feat.shape[2]])
+    x = concatenate([x, low_level_feat],axis=-1)
+
+    x = build_conv2D_block(x, filters=256, kernel_size=(3, 3), strides=(1, 1),use_bias=False)
+    x = Dropout(0.5)(x)
+    x = build_conv2D_block(x, filters=256, kernel_size=(3, 3), strides=(1, 1),use_bias=False)
+    x = Dropout(0.5)(x)
+    x = Conv2D(filters=num_classes,kernel_size=(1, 1), strides=(1, 1))(x)
+    return x
