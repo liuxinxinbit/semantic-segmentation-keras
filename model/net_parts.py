@@ -31,6 +31,7 @@ def build_SeparableConv2D_block(inputs, filters,kernel_size,strides):
     return Separableconv2d
 
 def pyramid_pooling(input_tensor, sub_region_sizes):
+    ## part of Fast-SCNN 
     """This class implements the Pyramid Pooling Module
 
     WARNING: This function uses eager execution, so it only works with
@@ -70,6 +71,7 @@ def pyramid_pooling(input_tensor, sub_region_sizes):
 
 
 def bottleneck(input_tensor, filters, strides, expansion_factor):
+    ## part of Fast-SCNN 
     """Implementing Bottleneck.
 
     This class implements the bottleneck module for Fast-SCNN.
@@ -132,11 +134,13 @@ def Interp(x, shape):
     resized = tf.image.resize(x, [new_height, new_width], method=tf.image.ResizeMethod.BILINEAR)
     return resized
 def _ASPPModule(tensor, filters, kernel_size=(1, 1), strides=(1, 1), padding="same", dilation=(1, 1)):
+    ## part of DeepLab_V3_Plus 
     tensor = Conv2D(filters=filters,kernel_size=kernel_size,strides=strides,padding=padding,dilation_rate=dilation)(tensor)
     tensor = BatchNormalization()(tensor)
     tensor = Activation('relu')(tensor)
     return tensor
 def ASPP(tensor, output_stride):
+    ## part of DeepLab_V3_Plus 
     if output_stride == 16:
         dilations = [1, 6, 12, 18]
     elif output_stride == 8:
@@ -157,6 +161,7 @@ def ASPP(tensor, output_stride):
     x = Dropout(0.5)(x)
     return x
 def Decoder(x, low_level_feat,num_classes):
+    ## part of DeepLab_V3_Plus 
     low_level_feat = build_conv2D_block(low_level_feat, filters=48, kernel_size=(1, 1), strides=(1, 1),use_bias=False)
     x = Interp(x,[low_level_feat.shape[1],low_level_feat.shape[2]])
     x = concatenate([x, low_level_feat],axis=-1)
