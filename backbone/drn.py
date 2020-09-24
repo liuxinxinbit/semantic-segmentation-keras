@@ -1,7 +1,12 @@
-import torch.nn as nn
+import os
+import sys
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) #当前程序上上一级目录，这里为mycompany
+sys.path.append(BASE_DIR)
 import math
-import torch.utils.model_zoo as model_zoo
-from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, Activation,concatenate,\
+    LeakyReLU,AveragePooling2D,DepthwiseConv2D,SeparableConv2D,Add
+from model.net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block,build_DepthwiseConv2D_block
+from tensorflow.keras import Model, Input
 
 webroot = 'http://dl.yf.io/drn/'
 
@@ -17,89 +22,90 @@ model_urls = {
 }
 
 
-def conv3x3(in_planes, out_planes, stride=1, padding=1, dilation=1):
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=padding, bias=False, dilation=dilation)
+def _downsample(tensor, filter, expansion=4, stride=2):
+    tensor = Conv2D(filters=filter*expansion, kernel_size=1,
+                    strides=stride, padding='same', use_bias=False)(tensor)
+    tensor = BatchNormalization(momentum=0.95, epsilon=1e-5)(tensor)
+    return tensor
 
 
-class BasicBlock(nn.Module):
-    expansion = 1
-
-    def __init__(self, inplanes, planes, stride=1, downsample=None,
-                 dilation=(1, 1), residual=True, BatchNorm=None):
-        super(BasicBlock, self).__init__()
-        self.conv1 = conv3x3(inplanes, planes, stride,
-                             padding=dilation[0], dilation=dilation[0])
-        self.bn1 = BatchNorm(planes)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(planes, planes,
-                             padding=dilation[1], dilation=dilation[1])
-        self.bn2 = BatchNorm(planes)
-        self.downsample = downsample
-        self.stride = stride
-        self.residual = residual
-
-    def forward(self, x):
-        residual = x
-
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
-
-        if self.downsample is not None:
-            residual = self.downsample(x)
-        if self.residual:
-            out += residual
-        out = self.relu(out)
-
-        return out
+def conv3x3(inputs, filter, stride=1, dilation=1):
+    return Conv2D(filters=filter, kernel_size=3, strides=stride, padding='same', dilation_rate=dilation, use_bias=False)(inputs)
 
 
-class Bottleneck(nn.Module):
-    expansion = 4
+def BasicBlock(tensor, filter, stride=1, downsample=False, _residual=None, dilation=(1, 1), residual=True):
+    residual = tensor
+    tensor = conv3x3(tensor, filter=filter,
+                     stride=stride, dilation=dilation[0])
+    tensor = BatchNormalization(momentum=0.95, epsilon=1e-5)(tensor)
+    tensor = Activation(LeakyReLU(alpha=0.1))(tensor)
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None,
-                 dilation=(1, 1), residual=True, BatchNorm=None):
-        super(Bottleneck, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
-        self.bn1 = BatchNorm(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                               padding=dilation[1], bias=False,
-                               dilation=dilation[1])
-        self.bn2 = BatchNorm(planes)
-        self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
-        self.bn3 = BatchNorm(planes * 4)
-        self.relu = nn.ReLU(inplace=True)
-        self.downsample = downsample
-        self.stride = stride
+    tensor = conv3x3(tensor, filter=filter,
+                     stride=stride, dilation=dilation[1])
+    tensor = BatchNormalization(momentum=0.95, epsilon=1e-5)(tensor)
+    if downsample:
+        residual = _downsample(tensor=tensor, filter=filter)
+    if _residual:
+        tensor = Add()([residual, tensor])
+    tensor = Activation(LeakyReLU(alpha=0.1))(tensor)
+    return tensor
 
-    def forward(self, x):
-        residual = x
+def Bottleneck(tensor, filter, stride=1, downsample=False,dilation=(1, 1), _residual=True, BatchNorm=None):
+    residual = tensor
+    tensor = Conv2D(filters=filter, kernel_size=1, strides=stride, padding='same', dilation_rate=(1, 1), use_bias=False)(tensor)
+    tensor = BatchNormalization(momentum=0.95, epsilon=1e-5)(tensor)
+    tensor = Activation(LeakyReLU(alpha=0.1))(tensor)
 
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
+    tensor = Conv2D(filters=filter, kernel_size=3, strides=stride, padding='same', dilation_rate=dilation[1], use_bias=False)(tensor)
+    tensor = BatchNormalization(momentum=0.95, epsilon=1e-5)(tensor)
+    tensor = Activation(LeakyReLU(alpha=0.1))(tensor)
 
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out = self.relu(out)
-
-        out = self.conv3(out)
-        out = self.bn3(out)
-
-        if self.downsample is not None:
-            residual = self.downsample(x)
-
-        out += residual
-        out = self.relu(out)
-
-        return out
+    tensor = Conv2D(filters=filter*4, kernel_size=1, strides=stride, padding='same', dilation_rate=(1, 1), use_bias=False)(tensor)
+    tensor = BatchNormalization(momentum=0.95, epsilon=1e-5)(tensor)
+    if downsample :
+            residual = _downsample(tensor=tensor, filter=filter)
+    if _residual:
+        tensor = Add()([residual, tensor])
+    tensor = Activation(LeakyReLU(alpha=0.1))(tensor)
+    return tensor
 
 
-class DRN(nn.Module):
+def make_layer_BasicBlock(tensor,filter=64, stride=1, blocks=1, dilation=1, new_level=True, residual=True):
+    assert dilation == 1 or dilation % 2 == 0
+    downsample = True if stride == 1 else False
+    tensor = BasicBlock(tensor =tensor, filter=filter, stride=stride, downsample=downsample, _residual=None, dilation=(1, 1) if dilation == 1 else (
+                dilation // 2 if new_level else dilation, dilation), residual=True)
+    for i in range(1, blocks):
+        tensor = BasicBlock(tensor =tensor, filter=filter, stride=stride, downsample=downsample, _residual=None, dilation=(dilation, dilation), residual=True)
+    return tensor
+
+def make_layer_Bottleneck(tensor,filter=64, stride=1, blocks=1, dilation=1, new_level=True, residual=True):
+    assert dilation == 1 or dilation % 2 == 0
+    downsample = True if stride == 1 else False
+    tensor = Bottleneck(tensor =tensor, filter=filter, stride=stride, downsample=downsample, _residual=None, dilation=(1, 1) if dilation == 1 else (
+                dilation // 2 if new_level else dilation, dilation), residual=True)
+    for i in range(1, blocks):
+        tensor = Bottleneck(tensor =tensor, filter=filter, stride=stride, downsample=downsample, _residual=None, dilation=(dilation, dilation), residual=True)
+    return tensor
+
+def DRN(tensor,layers, arch='D',channels=(16, 32, 64, 128, 256, 512, 512, 512),BatchNorm=None):
+    if arch == 'C':
+        tensor = build_conv2D_block(inputs = tensor, filters=channels[0], kernel_size=7, strides=1, dilation_rate=(1, 1), use_bias=False)
+    elif arch == 'D':
+        tensor = build_conv2D_block(inputs = tensor, filters=channels[0], kernel_size=7, strides=1, dilation_rate=(1, 1), use_bias=False)
+
+                    nn.Conv2d(3, channels[0], kernel_size=7, stride=1, padding=3,
+                          bias=False),
+                BatchNorm(channels[0]),
+                nn.ReLU(inplace=True)    
+        if self.arch == 'C':
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.relu(x)
+        elif self.arch == 'D':
+            x = self.layer0(x)
+class DRN(nn.Moduleblock, ):
+    
 
     def __init__(self, block, layers, arch='D',
                  channels=(16, 32, 64, 128, 256, 512, 512, 512),
@@ -168,30 +174,6 @@ class DRN(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-
-    def _make_layer(self, block, planes, blocks, stride=1, dilation=1,
-                    new_level=True, residual=True, BatchNorm=None):
-        assert dilation == 1 or dilation % 2 == 0
-        downsample = None
-        if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
-                BatchNorm(planes * block.expansion),
-            )
-
-        layers = list()
-        layers.append(block(
-            self.inplanes, planes, stride, downsample,
-            dilation=(1, 1) if dilation == 1 else (
-                dilation // 2 if new_level else dilation, dilation),
-            residual=residual, BatchNorm=BatchNorm))
-        self.inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes, residual=residual,
-                                dilation=(dilation, dilation), BatchNorm=BatchNorm))
-
-        return nn.Sequential(*layers)
 
     def _make_conv_layers(self, channels, convs, stride=1, dilation=1, BatchNorm=None):
         modules = []
