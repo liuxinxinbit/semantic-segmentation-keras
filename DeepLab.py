@@ -60,7 +60,7 @@ if __name__ == '__main__':
     #marine data******************
     num_class = 3
     md = marine_data()
-    # train(md)
+    train(md)
     test()
     _eval(md)
     #voc data*********************

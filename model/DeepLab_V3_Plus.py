@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from labelme import utils
 import imgviz
 from math import ceil
-from net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block,build_DepthwiseConv2D_block,ASPP,Decoder
+from .net_parts import build_conv2D_block, build_conv2Dtranspose_block,bottleneck,pyramid_pooling,build_SeparableConv2D_block,build_DepthwiseConv2D_block,ASPP,Decoder
 from backbone import ResNet
 def BN():
     return BatchNormalization(momentum=0.95, epsilon=1e-5)
@@ -86,10 +86,10 @@ class DeepLab_V3_Plus:
     def predict(self, image):
         return self.model.predict(np.array([image]))
     
-    def save(self, file_path='pspnet_model.h5'):
+    def save(self, file_path='deeplabv3plus_model.h5'):
         self.model.save_weights(file_path)
         
-    def load(self, file_path='pspnet_model.h5'):
+    def load(self, file_path='deeplabv3plus_model.h5'):
         self.model.load_weights(file_path)
             
     def train(self, epochs=10, steps_per_epoch=50,batch_size=32):
