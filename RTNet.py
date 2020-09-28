@@ -10,16 +10,16 @@ import imgviz
 import time
 from utils.data_process import preprocess, random_crop_or_pad
 from model import rtnet
-from utils.dataset import marine_data,voc_data
+from utils.dataset import marine_data,voc_data,camvid_data
 
-image_size=(512, 512, 3)
-num_class=3
-def train(md):
+
+
+def train(md,image_size=(352, 480, 3),num_class=3):
     RTNet = rtnet(image_size = image_size,num_class=num_class)
-    RTNet.batch_generator = md.BatchGenerator(batch_size=4, image_size=(512, 512, 3), labels=num_class)
+    RTNet.batch_generator = md.BatchGenerator(batch_size=4, image_size=image_size, labels=num_class)
     RTNet.train(epochs=10, steps_per_epoch=500)
     RTNet.save()
-def test():
+def test(image_size=(352, 480, 3),num_class=3):
     RTNet = rtnet(image_size = image_size,num_class=num_class)
     RTNet.load()
     for flag in range(500):
@@ -35,8 +35,8 @@ def test():
         plt.pause(0.01)
         plt.clf()
 
-def _eval(dataset):
-    images, truths = dataset.eval_data(batch_size=8,image_size=(512, 512, 3),labels=num_class)
+def _eval(dataset,image_size=(352, 480, 3),num_class=3):
+    images, truths = dataset.eval_data(batch_size=8,image_size=image_size,labels=num_class)
     print(truths.shape)
     RTNet = rtnet(image_size = image_size,num_class=num_class)
     RTNet.load()
@@ -69,3 +69,7 @@ if __name__ == '__main__':
     # train(voc)
     # _eval(voc)
     #*****************************8
+    num_class = 1
+    camvid = camvid_data()
+    train(camvid)
+    _eval(camvid)

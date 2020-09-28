@@ -159,6 +159,81 @@ class voc_data:
             truths[i] = (np.arange(labels) == mask[...,None]-1).astype(int) # encode to one-hot-vector
         return images, truths
 
+class camvid_data:
+    def __init__(self,data_path = 'SegNet/CamVid'):
+        self.parameter = [24,48,64,96,128,196]
+        self.trainset  = open(data_path+'/train.txt').readlines()
+        self.trainset += open(data_path+'/val.txt').readlines()
+        self.testset = open(data_path+'/test.txt').readlines()
+        self.num_train = len(self.trainset)
+    def random_crop_or_pad(self, image, truth, size=(352, 480)):
+        assert image.shape[:2] == truth.shape[:2]
+
+        if image.shape[0] > size[0]:
+            crop_random_y = random.randint(0, image.shape[0] - size[0])
+            image = image[crop_random_y:crop_random_y + size[0],:,:]
+            truth = truth[crop_random_y:crop_random_y + size[0],:]
+        else:
+            zeros = np.zeros((size[0], image.shape[1], image.shape[2]), dtype=np.float32)
+            zeros[:image.shape[0], :image.shape[1], :] = image                                          
+            image = np.copy(zeros)
+            zeros = np.zeros((size[0], truth.shape[1]), dtype=np.float32)
+            zeros[:truth.shape[0], :truth.shape[1]] = truth
+            truth = np.copy(zeros)
+
+        if image.shape[1] > size[1]:
+            crop_random_x = random.randint(0, image.shape[1] - size[1])
+            image = image[:,crop_random_x:crop_random_x + size[1],:]
+            truth = truth[:,crop_random_x:crop_random_x + size[1]]
+        else:
+            zeros = np.zeros((image.shape[0], size[1], image.shape[2]))
+            zeros[:image.shape[0], :image.shape[1], :] = image
+            image = np.copy(zeros)
+            zeros = np.zeros((truth.shape[0], size[1]))
+            zeros[:truth.shape[0], :truth.shape[1]] = truth
+            truth = np.copy(zeros)            
+
+        return image, truth
+
+    #(0=Sky, 1=Building, 2=Pole, 3=Road, 4=Pavement, 5=Tree, 6=SignSymbol, 7= Fence, 8=Car, 9=Pedestrian, 
+    # 10=Bicyclist, 11=Unlabeled)
+    
+    def BatchGenerator(self,batch_size=8, image_size=(352, 480, 3), labels=11):
+        while True:
+            images = np.zeros((batch_size, image_size[0], image_size[1], image_size[2]))
+            truths = np.zeros((batch_size, image_size[0], image_size[1], labels))
+
+            for i in range(batch_size):
+                random_line = random.choice(self.trainset)
+                image_file = random_line.split(' ')[0]
+                truth_file = random_line.split(' ')[1]
+                image = np.float32(Image.open('.'+image_file))/255.0
+                image = image[:352,:,:]
+                truth_mask = np.int16(Image.open('.'+truth_file[:-1]))
+                truth_mask = truth_mask[:352,:]
+                image, truth = self.random_crop_or_pad(image, truth_mask, image_size)
+                images[i] = image
+                truths[i] = (np.arange(labels) == truth[...,None]-1).astype(int) # encode to one-hot-vector
+            yield images, truths
+    def eval_data(self,batch_size=8, image_size=(352, 480, 3), labels=21):
+        while True:
+            images = np.zeros((batch_size, image_size[0], image_size[1], image_size[2]))
+            truths = np.zeros((batch_size, image_size[0], image_size[1], labels))
+
+            for i in range(batch_size):
+                random_line = random.choice(self.testset)
+                image_file = random_line.split(' ')[0]
+                truth_file = random_line.split(' ')[1]
+                image = np.float32(Image.open('.'+image_file))/255.0
+                image = image[:352,:,:]
+                truth_mask = np.int16(Image.open('.'+truth_file[:-1]))
+                truth_mask = truth_mask[:352,:]
+                image, truth = self.random_crop_or_pad(image, truth_mask, image_size)
+                images[i] = image
+                truths[i] = (np.arange(labels) == truth[...,None]-1).astype(int) # encode to one-hot-vector
+        return images, truths 
+
+
 
 # dataset = voc_data()
 # dataset.eval_data()
