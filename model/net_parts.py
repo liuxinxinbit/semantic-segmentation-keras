@@ -1,7 +1,9 @@
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, Activation,concatenate,LeakyReLU,\
-    AveragePooling2D,DepthwiseConv2D,SeparableConv2D,Dropout
-
+    AveragePooling2D,DepthwiseConv2D,SeparableConv2D,Dropout,MaxPooling1D
 import tensorflow as tf
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, f,concatenate,Add
+
 # from tensorflow import keras
 def BN(name=""):
     return BatchNormalization(momentum=0.95, epsilon=1e-5)
@@ -172,3 +174,122 @@ def Decoder(x, low_level_feat,num_classes):
     x = Dropout(0.5)(x)
     x = Conv2D(filters=num_classes,kernel_size=(1, 1), strides=(1, 1))(x)
     return x
+
+
+    def non_local_block(tensor, intermediate_dim=None, compression=2,
+                    mode='embedded', add_residual=True):
+    """
+    Adds a Non-Local block for self attention to the input tensor.
+    Input tensor can be or rank 3 (temporal), 4 (spatial) or 5 (spatio-temporal).
+
+    Arguments:
+        tensor: input tensor
+        intermediate_dim: The dimension of the intermediate representation. Can be
+            `None` or a positive integer greater than 0. If `None`, computes the
+            intermediate dimension as half of the input channel dimension.
+        compression: None or positive integer. Compresses the intermediate
+            representation during the dot products to reduce memory consumption.
+            Default is set to 2, which states halve the time/space/spatio-time
+            dimension for the intermediate step. Set to 1 to prevent computation
+            compression. None or 1 causes no reduction.
+        mode: Mode of operation. Can be one of `embedded`, `gaussian`, `dot` or
+            `concatenate`.
+        add_residual: Boolean value to decide if the residual connection should be
+            added or not. Default is True for ResNets, and False for Self Attention.
+
+    Returns:
+        a tensor of same shape as input
+    """
+    channel_dim = 1 if K.image_data_format() == 'channels_first' else -1
+    ip_shape = tensor.shape
+
+    if mode not in ['gaussian', 'embedded', 'dot', 'concatenate']:
+        raise ValueError('`mode` must be one of `gaussian`, `embedded`, `dot` or `concatenate`')
+
+    if compression is None:
+        compression = 1
+
+    dim1, dim2, dim3 = None, None, None
+
+    if len(ip_shape) == 4:  # spatial / image data
+        batchsize, dim1, dim2, channels = ip_shape
+    else:
+        raise ValueError('Input dimension has to be either 3 (temporal), 4 (spatial) or 5 (spatio-temporal)')
+
+    # verify correct intermediate dimension specified
+    if intermediate_dim is None:
+        intermediate_dim = channels // 2
+
+        if intermediate_dim < 1:
+            intermediate_dim = 1
+
+    else:
+        intermediate_dim = int(intermediate_dim)
+
+        if intermediate_dim < 1:
+            raise ValueError('`intermediate_dim` must be either `None` or positive integer greater than 1.')
+
+    if mode == 'gaussian':  # Gaussian instantiation
+        x1 = K.reshape(tensor,[-1, channels])
+        x2 = K.reshape(tensor,[-1, channels])
+        f = K.dot(x1, x2)
+        f = Activation('softmax')(f)
+
+    elif mode == 'dot':  # Dot instantiation
+        # theta path
+        theta = Conv2D(filters=intermediate_dim,kernel_size=(1,1),strides=(1,1),padding='same',use_bias=False,kernel_initializer='he_normal')(tensor)
+        theta = K.reshape(theta,[-1, intermediate_dim])
+
+        # phi path
+        phi = Conv2D(filters=intermediate_dim,kernel_size=(1,1),strides=(1,1),padding='same',use_bias=False,kernel_initializer='he_normal')(tensor)
+        phi = K.reshape(phi,[-1, intermediate_dim])
+
+        f = K.dot(theta, phi)
+
+        size = K.int_shape(f)
+
+        # scale the values to make it size invariant
+        f = Lambda(lambda z: (1. / float(size[-1])) * z)(f)
+
+    elif mode == 'concatenate':  # Concatenation instantiation
+        raise NotImplementedError('Concatenate model has not been implemented yet')
+
+    else:  # Embedded Gaussian instantiation
+        # theta path
+        theta = Conv2D(filters=intermediate_dim,kernel_size=(1,1),strides=(1,1),padding='same',use_bias=False,kernel_initializer='he_normal')(tensor)
+        theta = K.reshape(theta,[-1, intermediate_dim])
+
+        # phi path
+        phi = Conv2D(filters=intermediate_dim,kernel_size=(1,1),strides=(1,1),padding='same',use_bias=False,kernel_initializer='he_normal')(tensor)
+        theta = K.reshape(theta,[-1, intermediate_dim])
+
+        if compression > 1:
+            # shielded computation
+            phi = MaxPooling1D(compression)(phi)
+
+        f = K.dot(theta, phi)
+        f = Activation('softmax')(f)
+
+    # g path
+    g = Conv2D(filters=intermediate_dim, kernel_size=(1, 1), strides=(
+        1, 1), padding='same', use_bias=False, kernel_initializer='he_normal')(tensor)
+    g = K.reshape(g, [-1, intermediate_dim])
+
+    if compression > 1 and mode == 'embedded':
+        # shielded computation
+        g = MaxPooling1D(compression)(g)
+
+    # compute output path
+    y = K.dot(f, g)
+
+    # reshape to input tensor format
+    y =  K.reshape(y,[intermediate_dim, dim1, dim2])
+
+    # project filters
+    y = Conv2D(filters=intermediate_dim,kernel_size=(1,1),strides=(1,1),padding='same',use_bias=False,kernel_initializer='he_normal')(y)
+
+    # residual connection
+    if add_residual:
+        y = add([tensor, y])
+
+    return y
