@@ -61,7 +61,6 @@ def residual_short(prev_layer, level, modify_stride=False):
     added = Add()([block_1, block_2])
     return added
 
-
 def residual_empty(prev_layer, level):
     prev_layer = Activation('relu')(prev_layer)
     block_1 = residual_conv(prev_layer, level)

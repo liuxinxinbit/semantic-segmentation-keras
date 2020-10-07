@@ -2,7 +2,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambd
     AveragePooling2D,DepthwiseConv2D,SeparableConv2D,Dropout,MaxPooling1D
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, f,concatenate,Add
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization,concatenate,Add
 
 # from tensorflow import keras
 def BN(name=""):
@@ -176,7 +176,7 @@ def Decoder(x, low_level_feat,num_classes):
     return x
 
 
-    def non_local_block(tensor, intermediate_dim=None, compression=2,
+def non_local_block(tensor, intermediate_dim=None, compression=2,
                     mode='embedded', add_residual=True):
     """
     Adds a Non-Local block for self attention to the input tensor.
@@ -200,7 +200,6 @@ def Decoder(x, low_level_feat,num_classes):
     Returns:
         a tensor of same shape as input
     """
-    channel_dim = 1 if K.image_data_format() == 'channels_first' else -1
     ip_shape = tensor.shape
 
     if mode not in ['gaussian', 'embedded', 'dot', 'concatenate']:
@@ -228,47 +227,19 @@ def Decoder(x, low_level_feat,num_classes):
 
         if intermediate_dim < 1:
             raise ValueError('`intermediate_dim` must be either `None` or positive integer greater than 1.')
+    theta = Conv2D(filters=intermediate_dim,kernel_size=(1,1),strides=(1,1),padding='same',use_bias=False,kernel_initializer='he_normal')(tensor)
+    theta = K.reshape(theta,[-1, intermediate_dim])
 
-    if mode == 'gaussian':  # Gaussian instantiation
-        x1 = K.reshape(tensor,[-1, channels])
-        x2 = K.reshape(tensor,[-1, channels])
-        f = K.dot(x1, x2)
-        f = Activation('softmax')(f)
+    # phi path
+    phi = Conv2D(filters=intermediate_dim,kernel_size=(1,1),strides=(1,1),padding='same',use_bias=False,kernel_initializer='he_normal')(tensor)
+    phi = K.reshape(phi,[-1, intermediate_dim])
 
-    elif mode == 'dot':  # Dot instantiation
-        # theta path
-        theta = Conv2D(filters=intermediate_dim,kernel_size=(1,1),strides=(1,1),padding='same',use_bias=False,kernel_initializer='he_normal')(tensor)
-        theta = K.reshape(theta,[-1, intermediate_dim])
+    if compression > 1:
+        # shielded computation
+        phi = MaxPooling1D(compression)(phi)
 
-        # phi path
-        phi = Conv2D(filters=intermediate_dim,kernel_size=(1,1),strides=(1,1),padding='same',use_bias=False,kernel_initializer='he_normal')(tensor)
-        phi = K.reshape(phi,[-1, intermediate_dim])
-
-        f = K.dot(theta, phi)
-
-        size = K.int_shape(f)
-
-        # scale the values to make it size invariant
-        f = Lambda(lambda z: (1. / float(size[-1])) * z)(f)
-
-    elif mode == 'concatenate':  # Concatenation instantiation
-        raise NotImplementedError('Concatenate model has not been implemented yet')
-
-    else:  # Embedded Gaussian instantiation
-        # theta path
-        theta = Conv2D(filters=intermediate_dim,kernel_size=(1,1),strides=(1,1),padding='same',use_bias=False,kernel_initializer='he_normal')(tensor)
-        theta = K.reshape(theta,[-1, intermediate_dim])
-
-        # phi path
-        phi = Conv2D(filters=intermediate_dim,kernel_size=(1,1),strides=(1,1),padding='same',use_bias=False,kernel_initializer='he_normal')(tensor)
-        theta = K.reshape(theta,[-1, intermediate_dim])
-
-        if compression > 1:
-            # shielded computation
-            phi = MaxPooling1D(compression)(phi)
-
-        f = K.dot(theta, phi)
-        f = Activation('softmax')(f)
+    f = K.dot(theta, phi)
+    f = Activation('softmax')(f)
 
     # g path
     g = Conv2D(filters=intermediate_dim, kernel_size=(1, 1), strides=(
