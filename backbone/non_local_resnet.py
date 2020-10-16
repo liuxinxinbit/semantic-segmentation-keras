@@ -81,7 +81,24 @@ def Interp(x, shape):
     new_height, new_width = shape
     resized = tf.image.resize(x, [new_height, new_width], method=tf.image.ResizeMethod.BILINEAR)
     return resized
+def _make_layer(inputs, filters, blocks, stride=1, dilation=1):
+    downsample = False
+    if stride != 1 or inputs.shape[0] != filters * 4:
+        downsample=True
 
+    output = Bottleneck(inputs, filters, stride=stride, downsample=downsample)
+    for i in range(1, blocks):
+        output = Bottleneck(output, filters, dilation=dilation, downsample=downsample)
+    return output
+def _make_MG_unit(inputs, filters, blocks, stride=1, dilation=1):
+    downsample = False
+    if stride != 1 or inputs.shape[0] != filters * 4:
+        downsample=True
+
+    output = Bottleneck(inputs, filters, stride=stride, downsample=downsample)
+    for i in range(1, blocks):
+        output = Bottleneck(output, filters, dilation=blocks*dilation, downsample=downsample)
+    return output
 def ResNet(inputdata, layers):
     cnv1 = build_conv2D_block(inputdata, filters=64, kernel_size=3, strides=2)
     cnv1 = build_conv2D_block(cnv1, filters=64, kernel_size=3, strides=1)
@@ -194,4 +211,4 @@ class non_local_pspnet:
         self.model.compile(optimizer=sgd,
                     loss='categorical_crossentropy',
                     metrics=['accuracy'])
-PSPNet = non_local_pspnet(image_size = (512, 512, 3),num_class=3,print_summary=True)
+# PSPNet = non_local_pspnet(image_size = (512, 512, 3),num_class=3,print_summary=True)

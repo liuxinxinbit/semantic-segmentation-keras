@@ -58,8 +58,8 @@ def ResNet(inputdata, layers, output_stride, pretrained=True):
     else:
         raise NotImplementedError
     cnv1 = build_conv2D_block(inputdata, filters=64, kernel_size=3, strides=1)
-    # cnv1 = build_conv2D_block(cnv1, filters=64, kernel_size=3, strides=1)
-    # cnv1 = build_conv2D_block(cnv1, filters=64, kernel_size=3, strides=1)
+    cnv1 = build_conv2D_block(cnv1, filters=64, kernel_size=3, strides=1)
+    cnv1 = build_conv2D_block(cnv1, filters=64, kernel_size=3, strides=1)
     res = MaxPooling2D(pool_size=(3, 3), padding='same', strides=(2, 2))(cnv1)
 
     low_level_feat = _make_layer(inputs = res, filters = 64, blocks = layers[0], stride=strides[0], dilation=dilations[0])
