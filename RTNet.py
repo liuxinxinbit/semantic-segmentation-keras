@@ -14,17 +14,17 @@ from utils.dataset import marine_data,voc_data,camvid_data
 
 
 
-def train(md,image_size=(352, 480, 3),num_class=3):
+def train(md,image_size=(512, 512, 3),num_class=3):
     RTNet = rtnet(image_size = image_size,num_class=num_class)
-    RTNet.batch_generator = md.BatchGenerator(batch_size=4, image_size=image_size, labels=num_class)
+    RTNet.batch_generator = md.BatchGenerator(batch_size=8, image_size=image_size, labels=num_class)
     RTNet.train(epochs=10, steps_per_epoch=500)
     RTNet.save()
-def test(image_size=(352, 480, 3),num_class=3):
+def test(image_size=(512, 512, 3),num_class=3):
     RTNet = rtnet(image_size = image_size,num_class=num_class)
     RTNet.load()
     for flag in range(500):
         print(str(flag).zfill(5))
-        image = Image.open("../marine_data/11/images/"+str(flag+1).zfill(5)+".jpg")
+        image = Image.open("../marine_data/12/images/"+str(flag+1).zfill(5)+".jpg")
         image,label = preprocess(image)
         plt.subplot(1, 2, 1)
         plt.imshow(np.array(image))
@@ -35,7 +35,7 @@ def test(image_size=(352, 480, 3),num_class=3):
         plt.pause(0.01)
         plt.clf()
 
-def _eval(dataset,image_size=(352, 480, 3),num_class=3):
+def _eval(dataset,image_size=(512, 512, 3),num_class=3):
     images, truths = dataset.eval_data(batch_size=8,image_size=image_size,labels=num_class)
     print(truths.shape)
     RTNet = rtnet(image_size = image_size,num_class=num_class)
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # train(voc)
     # _eval(voc)
     #*****************************8
-    num_class = 1
-    camvid = camvid_data()
-    train(camvid)
-    _eval(camvid)
+    # num_class = 1
+    # camvid = camvid_data()
+    # train(camvid)
+    # _eval(camvid)

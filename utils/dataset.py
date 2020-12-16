@@ -66,7 +66,7 @@ class marine_data:
         files= [find_dir+file for file in os.listdir(find_dir) if file.endswith(format_name)]
         return files
 
-    def BatchGenerator(self,batch_size=8, image_size=(448, 512, 3), labels=3):#500, 375
+    def BatchGenerator(self,batch_size=8, image_size=(512, 512, 3), labels=3):#500, 375
         while True:
             images = np.zeros((batch_size, image_size[0], image_size[1], image_size[2]))
             truths = np.zeros((batch_size, image_size[0], image_size[1], labels))
@@ -76,7 +76,7 @@ class marine_data:
                 image = Image.fromarray(image.astype('uint8')).convert('RGB')
                 truth_mask = Image.fromarray(truth_mask.astype('uint8'))
                 image,truth_mask = preprocess(image,truth_mask)
-
+                
                 truth_mask=truth_mask+1
                 images[i] = image/255
                 truths[i] = (np.arange(labels) == truth_mask[...,None]-1).astype(int) # encode to one-hot-vector
