@@ -5,7 +5,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambd
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import load_model, save_model
 from tensorflow.keras.applications import VGG16
-from tensorflow.keras.utils import multi_gpu_model
+# from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.layers import LeakyReLU
 import os
 import random
@@ -160,12 +160,12 @@ class voc_data:
         return images, truths
 
 class camvid_data:
-    def __init__(self,data_path = 'SegNet/CamVid'):
-        self.parameter = [24,48,64,96,128,196]
-        self.trainset  = open(data_path+'/train.txt').readlines()
-        self.trainset += open(data_path+'/val.txt').readlines()
-        self.testset = open(data_path+'/test.txt').readlines()
+    def __init__(self,data_path = '/home/liuxinxin/Toolkit/gitcode/data'):
+        self.trainset  = open(data_path+'/SegNet/CamVid/train.txt').readlines()
+        self.trainset += open(data_path+'/SegNet/CamVid/val.txt').readlines()
+        self.testset = open(data_path+'/SegNet/CamVid/test.txt').readlines()
         self.num_train = len(self.trainset)
+        self.data_path=data_path
     def random_crop_or_pad(self, image, truth, size=(352, 480)):
         assert image.shape[:2] == truth.shape[:2]
 
@@ -207,30 +207,24 @@ class camvid_data:
                 random_line = random.choice(self.trainset)
                 image_file = random_line.split(' ')[0]
                 truth_file = random_line.split(' ')[1]
-                image = np.float32(Image.open('.'+image_file))/255.0
-                image = image[:352,:,:]
-                truth_mask = np.int16(Image.open('.'+truth_file[:-1]))
-                truth_mask = truth_mask[:352,:]
-                image, truth = self.random_crop_or_pad(image, truth_mask, image_size)
-                images[i] = image
-                truths[i] = (np.arange(labels) == truth[...,None]-1).astype(int) # encode to one-hot-vector
+                image = Image.open(self.data_path+image_file)
+                truth_mask = Image.open(self.data_path+truth_file[:-1])
+                image,truth_mask = preprocess(image,truth_mask)
+                images[i] = image/255.0
+                truths[i] = (np.arange(labels) == truth_mask[...,None]-1).astype(int) # encode to one-hot-vector
             yield images, truths
-    def eval_data(self,batch_size=8, image_size=(352, 480, 3), labels=21):
-        while True:
-            images = np.zeros((batch_size, image_size[0], image_size[1], image_size[2]))
-            truths = np.zeros((batch_size, image_size[0], image_size[1], labels))
-
-            for i in range(batch_size):
-                random_line = random.choice(self.testset)
-                image_file = random_line.split(' ')[0]
-                truth_file = random_line.split(' ')[1]
-                image = np.float32(Image.open('.'+image_file))/255.0
-                image = image[:352,:,:]
-                truth_mask = np.int16(Image.open('.'+truth_file[:-1]))
-                truth_mask = truth_mask[:352,:]
-                image, truth = self.random_crop_or_pad(image, truth_mask, image_size)
-                images[i] = image
-                truths[i] = (np.arange(labels) == truth[...,None]-1).astype(int) # encode to one-hot-vector
+    def eval_data(self,batch_size=8, image_size=(352, 480, 3), labels=12):
+        images = np.zeros((batch_size, image_size[0], image_size[1], image_size[2]))
+        truths = np.zeros((batch_size, image_size[0], image_size[1], labels))
+        for i in range(batch_size):
+            random_line = random.choice(self.testset)
+            image_file = random_line.split(' ')[0]
+            truth_file = random_line.split(' ')[1]
+            image = Image.open(self.data_path+image_file)
+            truth_mask = Image.open(self.data_path+truth_file[:-1])
+            image,truth_mask = preprocess(image,truth_mask)
+            images[i] = image/255.0
+            truths[i] = (np.arange(labels) == truth_mask[...,None]-1).astype(int) # encode to one-hot-vector
         return images, truths 
 
 

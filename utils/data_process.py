@@ -113,13 +113,15 @@ def preprocess(pil_img, pil_label=None,image_size=(512, 512)):
     if pil_label is not None:
         pil_label = np.array(pil_label)
     if w>h:
-        new_img= pil_img[np.int16((w-h)/2):np.int16((w-h)/2)+h,:]
+        random_start = random.randint(0,w-h)
+        new_img= pil_img[random_start:random_start+h,:]
         if pil_label is not None:
             new_label = pil_label[np.int16((w-h)/2):np.int16((w-h)/2)+h,:]
     elif h>w:
-        new_img = pil_img[:,np.int16((h-w)/2):np.int16((h-w)/2)+w]
+        random_start = random.randint(0,h-w)
+        new_img = pil_img[:,random_start:random_start+w]
         if pil_label is not None:
-            new_label= pil_label[:,np.int16((h-w)/2):np.int16((h-w)/2)+w]
+            new_label= pil_label[:,random_start:random_start+w]
     else:
         new_img=pil_img
         if pil_label is not None:

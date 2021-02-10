@@ -58,14 +58,14 @@ def _eval(dataset):
 
 if __name__ == '__main__':
     #marine data******************
-    # num_class = 3
-    # md = marine_data()
-    # # train(md)
-    # test()
-    # _eval(md)
+    num_class = 3
+    md = marine_data()
+    train(md)
+    test()
+    _eval(md)
     #voc data*********************
-    num_class = 21
-    voc = voc_data()
-    train(voc)
-    _eval(voc)
+    # num_class = 21
+    # voc = voc_data()
+    # train(voc)
+    # _eval(voc)
     #*****************************

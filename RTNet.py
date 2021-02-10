@@ -9,14 +9,14 @@ import random
 import imgviz
 import time
 from utils.data_process import preprocess, random_crop_or_pad
-from model import rtnet
+# from model import rtnet
 from utils.dataset import marine_data,voc_data,camvid_data
 
 
 
 def train(md,image_size=(512, 512, 3),num_class=3):
     RTNet = rtnet(image_size = image_size,num_class=num_class)
-    RTNet.batch_generator = md.BatchGenerator(batch_size=8, image_size=image_size, labels=num_class)
+    RTNet.batch_generator = md.BatchGenerator(batch_size=6, image_size=image_size, labels=num_class)
     RTNet.train(epochs=10, steps_per_epoch=500)
     RTNet.save()
 def test(image_size=(512, 512, 3),num_class=3):
@@ -24,7 +24,8 @@ def test(image_size=(512, 512, 3),num_class=3):
     RTNet.load()
     for flag in range(500):
         print(str(flag).zfill(5))
-        image = Image.open("../marine_data/12/images/"+str(flag+1).zfill(5)+".jpg")
+        # image = Image.open("../marine_data/GTA_PICTURE/images/"+str(flag+1).zfill(5)+".jpg")
+        image = Image.open("1.png")
         image,label = preprocess(image)
         plt.subplot(1, 2, 1)
         plt.imshow(np.array(image))
@@ -35,8 +36,9 @@ def test(image_size=(512, 512, 3),num_class=3):
         plt.pause(0.01)
         plt.clf()
 
+
 def _eval(dataset,image_size=(512, 512, 3),num_class=3):
-    images, truths = dataset.eval_data(batch_size=8,image_size=image_size,labels=num_class)
+    images, truths = dataset.eval_data(batch_size=6,image_size=image_size,labels=num_class)
     print(truths.shape)
     RTNet = rtnet(image_size = image_size,num_class=num_class)
     RTNet.load()
@@ -46,8 +48,13 @@ def _eval(dataset,image_size=(512, 512, 3),num_class=3):
         prediction = RTNet.predict(images[i,:,:,:])
         metric = SegmentationMetric(num_class)
         prediction = np.argmax(prediction[0,:,:,:],-1)
-        # plt.imshow(prediction)
+        plt.subplot(1,2,1)
+        plt.imshow(images[i,:,:,:])
+        plt.subplot(1,2,2)
+        plt.imshow(prediction)
         # plt.show()
+        plt.pause(0.5)
+        plt.clf()
         truth = np.argmax(truths[i,:,:,:],-1)
         metric.addBatch(prediction, truth)
         acc = metric.pixelAccuracy()
@@ -68,8 +75,8 @@ if __name__ == '__main__':
     # voc = voc_data()
     # train(voc)
     # _eval(voc)
-    #*****************************8
-    # num_class = 1
+    #camvid_data*****************************8
+    # num_class = 12
     # camvid = camvid_data()
-    # train(camvid)
-    # _eval(camvid)
+    # train(camvid,image_size=(512,512,3),num_class=12)
+    # _eval(camvid,image_size=(512,512,3),num_class=12)

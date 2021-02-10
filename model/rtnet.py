@@ -3,9 +3,10 @@ from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, Activation,concatenate,Add
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import load_model, save_model
-from tensorflow.keras.utils import multi_gpu_model
+# from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.layers import LeakyReLU
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 import random
 import numpy as np
 from PIL import Image
@@ -141,5 +142,5 @@ class rtnet:
         self.model = Model(inputs=inputs, outputs=output)
         if print_summary:
             print(self.model.summary())
-        # ~ parallel_model = multi_gpu_model(self.model, gpus=1)
+        # self.parallel_model = multi_gpu_model(self.model, gpus=2)
         self.model.compile(optimizer='adam',loss='categorical_crossentropy',metrics=['accuracy'])

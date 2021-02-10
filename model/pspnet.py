@@ -7,7 +7,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.optimizers import SGD
 
 from tensorflow.keras.models import load_model, save_model
-from tensorflow.keras.utils import multi_gpu_model
+# from tensorflow.keras.utils import multi_gpu_model
 import os
 import random
 import numpy as np
@@ -78,7 +78,7 @@ def Interp(x, shape):
 class pspnet:
     def __init__(self,  print_summary=False,image_size=(512, 512, 3),num_class=3):
         self.num_class = num_class
-        self.build(print_summary=print_summary,image_size=image_size)
+        self.build(print_summary=print_summary,image_size=image_size,num_classes=num_class)
         self.batch_generator =  None
         
     def predict(self, image):

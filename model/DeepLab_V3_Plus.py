@@ -10,7 +10,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras import layers
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.models import load_model, save_model
-from tensorflow.keras.utils import multi_gpu_model
+# from tensorflow.keras.utils import multi_gpu_model
 import random
 import numpy as np
 from PIL import Image

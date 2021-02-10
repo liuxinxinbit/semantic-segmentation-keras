@@ -3,7 +3,7 @@ from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose, Lambda, Layer, BatchNormalization, Activation,concatenate,UpSampling2D
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import load_model, save_model
-from tensorflow.keras.utils import multi_gpu_model
+# from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.layers import LeakyReLU
 import os
 import random
